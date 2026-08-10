@@ -1,0 +1,11 @@
+DOSSIER MY_FILE
+===============
+1. Mets ICI le fichier Excel du client (une seule feuille de machines).
+2. Double-clique TRAITER_UN_FICHIER.bat (dans le dossier au-dessus).
+3. Les résultats apparaissent dans MY_FILE\resultats :
+   - PRET_A_POSTER.html  (annonces prêtes à copier-coller)
+   - listings_a_verifier.xlsx
+   - exports\ebay_file_exchange.csv
+
+Le système gère automatiquement les fichiers avec bandeau/titre en haut
+et convertit les liens Google Drive.
