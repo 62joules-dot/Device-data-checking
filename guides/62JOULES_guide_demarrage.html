@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>62 JOULES — Guide de démarrage</title>
+<style>
+:root{--ink:#0f2233;--muted:#5b6b78;--line:#e4e9ec;--teal:#0e7c86;--amber:#c77d24;--bg:#f4f7f8;--card:#fff;}
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:900px;margin:0 auto;padding:30px 26px 44px}
+.eyebrow{color:var(--teal);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+h1{font-size:26px;margin:6px 0 4px}.lead{color:var(--muted);font-size:15px;margin-bottom:22px}
+.pathbox{background:#eef6f6;border:1px solid #cfe6e7;border-radius:12px;padding:14px 16px;margin-bottom:26px;font-size:14px}
+.pathbox b{color:var(--teal)}
+.step{display:grid;grid-template-columns:44px 1fr;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.n{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:16px}
+.step h3{margin:0 0 4px;font-size:15px}.step p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.step code{background:#f0f3f4;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px}
+.divider{font-weight:700;font-size:15px;margin:26px 0 12px}
+.cols{display:grid;grid-template-columns:1fr;gap:10px}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.mini b{color:var(--ink)}
+.note{margin-top:22px;background:#fff8ec;border:1px solid #f0dcbb;border-radius:12px;padding:14px 16px;font-size:13px;color:#7a5a1e;line-height:1.55}
+.foot{color:var(--muted);font-size:12px;margin-top:22px;text-align:center}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#faedda;color:var(--amber);margin-left:6px}
+</style></head><body>
+<div class="wrap">
+  <div class="eyebrow">62 JOULES · Guide de démarrage</div>
+  <h1>Utiliser le système en 5 étapes</h1>
+  <div class="lead">Pas besoin d'être technicien. Tu remplis un fichier, tu double-cliques, tu récupères tes annonces.</div>
+
+  <div class="pathbox">La seule chose vraiment importante pour toi : <b>remplir le fichier Excel</b>. Le reste, c'est un double-clic.</div>
+
+  <div class="step"><div class="n">1</div><div><h3>Installer Python (une seule fois)</h3>
+    <p>Va sur <code>python.org</code>, télécharge Python pour Windows, et pendant l'installation <b>coche « Add Python to PATH »</b> (en bas du premier écran). Fait une fois pour toutes.</p></div></div>
+
+  <div class="step"><div class="n">2</div><div><h3>Décompresser le dossier</h3>
+    <p>Clic droit sur <code>medlist_system.zip</code> → <b>Extraire tout</b> → Extraire. Tu obtiens un dossier <code>medlist_pkg</code>.</p></div></div>
+
+  <div class="step"><div class="n">3</div><div><h3>Remplir tes machines</h3>
+    <p>Ouvre <code>output\intake\FICHE_A_REMPLIR.xlsx</code>. Une ligne par machine. Remplis surtout : <b>État, Pays, Année, N° de série, Photos</b>. Les 2 lignes jaunes sont des exemples. Enregistre.</p></div></div>
+
+  <div class="step"><div class="n">4</div><div><h3>Lancer le système</h3>
+    <p>Dans <code>medlist_pkg</code>, double-clique sur <b><code>RUN_ME.bat</code></b>. Une fenêtre s'ouvre, travaille, et affiche « DONE ». C'est fini.</p></div></div>
+
+  <div class="step"><div class="n">5</div><div><h3>Récupérer tes fichiers</h3>
+    <p>Ouvre le dossier <code>output</code>. Tu y trouves tes annonces (FR/EN/ES), le fichier eBay à importer, les emails brokers, et le fichier contacts.</p></div></div>
+
+  <div class="divider">Ce que tu fais avec chaque résultat</div>
+  <div class="cols">
+    <div class="mini"><b>eBay / DOTmed / Machinio / Kitmondo</b> — importe le fichier <code>.csv</code> / <code>.tsv</code> directement sur la plateforme. <span class="tag">automatique</span></div>
+    <div class="mini"><b>Leboncoin / Wallapop / Facebook</b> — ouvre le texte d'annonce, copie-colle, ajoute les photos, publie. ~2 min chacune. <span class="tag">manuel</span></div>
+    <div class="mini"><b>Brokers / international</b> — ouvre <code>broker_email_READY.txt</code>, ajoute ton numéro + email, envoie.</div>
+  </div>
+
+  <div class="note"><b>Photos :</b> sur Leboncoin / Facebook, tu ajoutes les photos directement au moment de publier. Pour eBay / DOTmed, il faut des <b>liens https</b> (héberge-les sur ton site, Google Drive public, ou Imgur), puis colle les liens dans la colonne « Photos ».<br><br><b>Important :</b> le système ne publie pas tout seul sur Leboncoin / Facebook / enchères — c'est interdit et ça fait bannir les comptes. Il te prépare tout ; tu valides et tu publies.</div>
+
+  <div class="foot">Réutilisable pour tout futur appareil : ajoute des lignes dans l'Excel, relance. · 62 JOULES</div>
+</div></body></html>
