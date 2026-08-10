@@ -1,0 +1,6 @@
+pandas>=2.0
+openpyxl>=3.1
+# Optional, only for the features that need them:
+playwright>=1.40        # market-research live scraping + Tier-B form-fill assist
+anthropic>=0.39         # LLM description enrichment
+# After installing playwright, also run once:  playwright install chromium
