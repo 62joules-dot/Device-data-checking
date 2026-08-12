@@ -1,21 +1,34 @@
 #!/usr/bin/env bash
 # Double-clickable / one-command runner for Mac & Linux.
-# It installs the two required libraries, then runs everything.
+# Creates a local .venv, installs deps, then runs everything.
 
 cd "$(dirname "$0")"
+ROOT="$(pwd)"
+set -e
+
+PY=python3
+command -v python3 >/dev/null 2>&1 || PY=python
+
+if [ ! -d "$ROOT/.venv" ]; then
+  echo "==> Creating local virtualenv (.venv)..."
+  "$PY" -m venv "$ROOT/.venv"
+fi
+
+PIP="$ROOT/.venv/bin/pip"
+PYTHON="$ROOT/.venv/bin/python"
 
 echo "==> Installing dependencies (pandas, openpyxl)..."
-pip3 install -r requirements.txt || pip install -r requirements.txt || true
+"$PIP" install -r "$ROOT/requirements.txt"
 
-cd src
+cd "$ROOT/src"
 
 echo
 echo "==> STEP 1: Processing the client's summary file (17 machine types, 79 units)"
-python3 intake_run.py ../data/client_listing_devices.xlsx || python intake_run.py ../data/client_listing_devices.xlsx
+"$PYTHON" intake_run.py ../data/client_listing_devices.xlsx
 
 echo
 echo "==> STEP 2: Full pipeline demo on sample data (listings + eBay CSV + feeds + research)"
-python3 cli.py all ../data/sample_devices.xlsx --mock || python cli.py all ../data/sample_devices.xlsx --mock
+"$PYTHON" cli.py all ../data/sample_devices.xlsx --mock
 
 echo
 echo "======================================================================"

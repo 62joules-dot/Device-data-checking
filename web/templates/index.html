@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedList — 62 Joules</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="brand-mark">62 Joules</div>
+    <p class="brand-sub">Medical-device listing engine</p>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 class="logo">MedList</h1>
+      <p class="lede">
+        Drop one inventory Excel — get multilingual listings, marketplace feeds,
+        and a publish checklist for six platforms.
+      </p>
+
+      <form id="run-form" class="run-panel" enctype="multipart/form-data">
+        <div class="field-row">
+          <label class="field">
+            <span>Mode</span>
+            <select name="mode" id="mode">
+              <option value="all" selected>Full pipeline (listings + research + outreach)</option>
+              <option value="build">Build listings &amp; feeds only</option>
+              <option value="intake">Intake (type + quantity summary)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Sample file</span>
+            <select name="sample" id="sample">
+              <option value="">— or upload your own —</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="drop" id="drop">
+          <input type="file" name="file" id="file" accept=".xlsx,.xls" />
+          <span class="drop-title">Upload Excel inventory</span>
+          <span class="drop-hint" id="file-label">.xlsx · max 32&nbsp;MB</span>
+        </label>
+
+        <div class="actions">
+          <button type="submit" class="btn primary" id="run-btn">Run pipeline</button>
+          <button type="button" class="btn ghost" id="refresh-btn">Refresh results</button>
+        </div>
+        <p class="status" id="status" role="status"></p>
+      </form>
+    </section>
+
+    <section class="workspace" id="workspace" hidden>
+      <div class="metrics" id="metrics"></div>
+
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="devices">Devices</button>
+        <button type="button" class="tab" data-tab="research">Market research</button>
+        <button type="button" class="tab" data-tab="files">Downloads</button>
+        <button type="button" class="tab" data-tab="missing">Missing data</button>
+      </nav>
+
+      <div class="panels">
+        <div class="panel active" id="panel-devices"></div>
+        <div class="panel" id="panel-research"></div>
+        <div class="panel" id="panel-files"></div>
+        <div class="panel" id="panel-missing"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Local only · http://127.0.0.1:5050</span>
+    <span>Leboncoin · Wallapop · Facebook · eBay · Machinio · Kitmondo</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

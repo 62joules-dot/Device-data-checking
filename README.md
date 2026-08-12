@@ -5,6 +5,14 @@ automation JSON for 6 marketplaces (Leboncoin, Wallapop, Facebook Marketplace,
 eBay, Machinio, Kitmondo).
 
 ## Run it
+
+**HTML interface (recommended):**
+```bash
+bash START_WEB.command
+# open http://127.0.0.1:5050
+```
+
+**CLI:**
 ```bash
 pip install -r requirements.txt
 cd src

@@ -4,3 +4,5 @@ output/
 MY_FILE/resultats/
 .browser_profile_*/
 .DS_Store
+.venv/
+web/uploads/
