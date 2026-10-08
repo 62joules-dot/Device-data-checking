@@ -34,9 +34,9 @@ type ParseResult = {
   source_label: string;
 };
 
-// Where a device can go, and how. "auto" = a real bulk feed exists, so the
-// listing can go online at import time; "manual" = posted by hand from Suivi;
-// "file" = only an import file is produced (no listing tracked in Suivi).
+// Where a device can go. Nothing is sent at import: listings wait in Suivi until
+// reviewed and validated. "auto" = sent by the platform feed once validated;
+// "manual" = posted by hand from Suivi; "file" = only an import file is produced.
 const TARGETS: { platform: string; kind: "auto" | "manual" | "file" }[] = [
   { platform: "leboncoin", kind: "manual" },
   { platform: "wallapop", kind: "manual" },
@@ -49,11 +49,11 @@ const TARGETS: { platform: string; kind: "auto" | "manual" | "file" }[] = [
   { platform: "bimedis_prepared", kind: "file" },
 ];
 
-type TargetChoice = { enabled: boolean; auto: boolean };
+type TargetChoice = { enabled: boolean };
 const TARGETS_STORAGE_KEY = "import.targets";
 
 function defaultTargets(): Record<string, TargetChoice> {
-  return Object.fromEntries(TARGETS.map((t) => [t.platform, { enabled: true, auto: false }]));
+  return Object.fromEntries(TARGETS.map((t) => [t.platform, { enabled: true }]));
 }
 
 export type ImportMode = "file" | "manual";
@@ -121,7 +121,7 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
           exports: parsed.exports,
           source_label: parsed.source_label,
           platforms: Object.fromEntries(
-            selectedTargets.map((t) => [t.platform, { auto: t.kind === "auto" && targets[t.platform].auto }])
+            selectedTargets.map((t) => [t.platform, {}])
           ),
         }),
       });
@@ -287,7 +287,8 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
           <h2 className="text-base font-semibold text-zinc-900">Où publier ?</h2>
           <p className="mt-1 text-sm text-zinc-500">
             {includedCount} appareil{includedCount === 1 ? "" : "s"} seront enregistrés. Coche les sites où publier :
-            les annonces sont préparées et sauvegardées dans le Suivi, où tu peux les relire avant de les mettre en ligne.
+            les annonces sont préparées et sauvegardées dans le Suivi. Rien n&apos;est envoyé tant que tu ne les as pas
+            relues et validées une par une.
           </p>
           <ul className="mt-4 divide-y divide-zinc-100 rounded-xl border border-zinc-200 text-sm">
             {TARGETS.map((t) => {
@@ -305,17 +306,12 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
                   {!choice.enabled ? (
                     <span className="text-xs text-zinc-400">Non publié</span>
                   ) : t.kind === "auto" ? (
-                    <select
-                      value={choice.auto ? "auto" : "review"}
-                      onChange={(e) => updateTarget(t.platform, { auto: e.target.value === "auto" })}
-                      className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
-                    >
-                      <option value="review">Je relis l&apos;annonce d&apos;abord</option>
-                      <option value="auto">Publier automatiquement</option>
-                    </select>
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                      À relire et valider dans le Suivi — envoi automatique ensuite
+                    </span>
                   ) : t.kind === "manual" ? (
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                      Manuel — à publier depuis le Suivi
+                      À relire dans le Suivi — publication à la main
                     </span>
                   ) : (
                     <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
