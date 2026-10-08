@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import UploadForm from "./upload-form";
+import SetPasswordForm from "./set-password-form";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -27,6 +28,11 @@ export default async function Dashboard() {
           <span className="text-sm text-slate-500">{user.email}</span>
         </form>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-slate-600">Account</h2>
+        <SetPasswordForm />
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-slate-600">Generate from inventory</h2>
