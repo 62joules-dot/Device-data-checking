@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/tracking", label: "Suivi" },
   { href: "/analytics", label: "Tableau de bord" },
   { href: "/pricing", label: "Simulateur de prix" },
+  { href: "/emails", label: "Emails" },
 ];
 
 export default function NavLinks() {
