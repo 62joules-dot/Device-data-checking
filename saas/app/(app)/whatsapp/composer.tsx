@@ -22,7 +22,8 @@ type Device = {
   photos: unknown;
 };
 type Listing = { device_id: string; platform: string; status: string; listing_url: string | null; short_description: string | null };
-type Sent = { contact_id: string; device_id: string | null; sent_at: string };
+type Sent = { contact_id: string; device_id: string | null; sent_at: string; channel: string; status: string; error: string | null };
+type Mode = "template" | "free";
 
 function buildTemplate(d: Device, listings: Listing[], photos: string[]) {
   const name = `${d.brand ?? ""} ${d.model ?? ""}`.trim();
@@ -48,11 +49,14 @@ function buildTemplate(d: Device, listings: Listing[], photos: string[]) {
 }
 
 export default function WhatsAppComposer({
-  devices, listings, bank, contacts, sent,
+  devices, listings, bank, contacts, sent, apiConfigured,
 }: {
-  devices: Device[]; listings: Listing[]; bank: BankImage[]; contacts: Contact[]; sent: Sent[];
+  devices: Device[]; listings: Listing[]; bank: BankImage[]; contacts: Contact[]; sent: Sent[]; apiConfigured: boolean;
 }) {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>("template");
+  const [sending, setSending] = useState(false);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState("");
   const [template, setTemplate] = useState("");
   const [included, setIncluded] = useState<string[]>([]);
@@ -87,6 +91,31 @@ export default function WhatsAppComposer({
     return template.replaceAll("{prenom}", c.name.split(/[\s–-]/)[0] || c.name);
   }
 
+  async function apiSend(targets: Contact[]) {
+    if (!targets.length) return;
+    if (targets.length > 1 && !confirm(`Envoyer via l'API WhatsApp à ${targets.length} contacts ?`)) return;
+    if (mode === "template" && included.length === 0 && !confirm("Aucune photo sélectionnée — le modèle Meta avec image échouera. Continuer ?")) return;
+    setSending(true);
+    setApiMessage(null);
+    try {
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contact_ids: targets.map((c) => c.id), device_id: deviceId, mode, message: template, image_urls: included }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Échec");
+      const ok = data.results.filter((r: { ok: boolean }) => r.ok).length;
+      const failed = data.results.filter((r: { ok: boolean }) => !r.ok);
+      setApiMessage(`${ok} envoyé(s)${failed.length ? `, ${failed.length} échec(s) : ${failed[0].error}` : ""}.`);
+      router.refresh();
+    } catch (e) {
+      setApiMessage(e instanceof Error ? e.message : "Échec");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function logSend(c: Contact) {
     await createClient().from("contact_messages").insert({ contact_id: c.id, device_id: deviceId || null, channel: "whatsapp" });
     router.refresh();
@@ -111,7 +140,10 @@ export default function WhatsAppComposer({
   }
 
   const lastSent = (contactId: string) =>
-    sent.filter((s) => s.contact_id === contactId && s.device_id === deviceId).map((s) => s.sent_at).sort().pop();
+    sent
+      .filter((s) => s.contact_id === contactId && s.device_id === deviceId)
+      .sort((a, b) => a.sent_at.localeCompare(b.sent_at))
+      .pop();
 
   return (
     <div className="space-y-6">
@@ -169,6 +201,29 @@ export default function WhatsAppComposer({
               </select>
             }
           />
+          {apiConfigured ? (
+            <div className="space-y-2 border-b border-zinc-100 px-5 py-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-medium text-zinc-500">Envoi API :</span>
+                <label className="flex items-center gap-1"><input type="radio" checked={mode === "template"} onChange={() => setMode("template")} /> Modèle Meta (1er contact)</label>
+                <label className="flex items-center gap-1"><input type="radio" checked={mode === "free"} onChange={() => setMode("free")} /> Message libre + photos (contact qui t&apos;a écrit &lt; 24 h)</label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={sending} onClick={() => apiSend(ranked.filter((r) => r.match).map((r) => r.c))}>
+                  Envoyer aux intéressés ({ranked.filter((r) => r.match).length})
+                </Button>
+                <Button variant="secondary" disabled={sending} onClick={() => apiSend(ranked.map((r) => r.c))}>
+                  Envoyer à toute la liste ({ranked.length})
+                </Button>
+              </div>
+              {sending && <p className="text-zinc-400">Envoi en cours…</p>}
+              {apiMessage && <p className="text-zinc-700">{apiMessage}</p>}
+            </div>
+          ) : (
+            <p className="border-b border-zinc-100 px-5 py-2.5 text-xs text-zinc-400">
+              Envoi via lien (tu cliques sur Envoyer dans WhatsApp). Pour l&apos;envoi direct, configure l&apos;API dans Réglages → Connexions & API.
+            </p>
+          )}
           <ul className="divide-y divide-zinc-100">
             {ranked.map(({ c, match }) => {
               const last = lastSent(c.id);
@@ -179,12 +234,21 @@ export default function WhatsAppComposer({
                     <span className="font-medium text-zinc-800">{c.name}</span>
                     <span className="ml-2 text-xs text-zinc-400">{c.kind === "client" ? "Client" : "Prospect"}</span>
                     {match && <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">intéressé par ce type</span>}
-                    {last && <span className="ml-2 text-xs text-zinc-400">envoyé le {new Date(last).toLocaleDateString()}</span>}
+                    {last && (
+                      <span className={`ml-2 text-xs ${last.status === "failed" ? "text-red-500" : "text-zinc-400"}`} title={last.error ?? undefined}>
+                        {last.status === "failed" ? "échec" : last.channel === "whatsapp_api" ? "envoyé (API)" : "ouvert dans WhatsApp"} le {new Date(last.sent_at).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                   {valid ? (
-                    <a href={whatsAppLink(c.phone, messageFor(c))} target="_blank" rel="noreferrer" onClick={() => logSend(c)}>
-                      <Button>Envoyer sur WhatsApp</Button>
-                    </a>
+                    <div className="flex gap-1.5">
+                      {apiConfigured && (
+                        <Button disabled={sending} onClick={() => apiSend([c])}>Envoyer (API)</Button>
+                      )}
+                      <a href={whatsAppLink(c.phone, messageFor(c))} target="_blank" rel="noreferrer" onClick={() => logSend(c)}>
+                        <Button variant={apiConfigured ? "secondary" : "primary"}>{apiConfigured ? "Ouvrir WhatsApp" : "Envoyer sur WhatsApp"}</Button>
+                      </a>
+                    </div>
                   ) : (
                     <span className="text-xs text-red-500">numéro invalide</span>
                   )}
