@@ -57,6 +57,13 @@ export async function POST(request: Request) {
   const automation: Record<string, any[]> = body.automation ?? {};
   const exports: Record<string, { filename: string; content: string }> = body.exports ?? {};
   const sourceLabel: string = body.source_label ?? "upload";
+  // Platforms chosen in the import wizard, { platform: { auto } }. Absent ->
+  // legacy behavior: every platform, Tier A auto-posted.
+  const chosen: Record<string, { auto?: boolean }> | null =
+    body.platforms && typeof body.platforms === "object" ? body.platforms : null;
+  const isChosen = (platform: string) => !chosen || platform in chosen;
+  const isAuto = (platform: string) =>
+    TIER_A.has(platform) && (chosen ? Boolean(chosen[platform]?.auto) : true);
 
   const included = records.filter((r) => r._include !== false);
 
@@ -111,6 +118,7 @@ export async function POST(request: Request) {
 
     const gen = rec.generated ?? {};
     for (const platform of PLATFORMS) {
+      if (!isChosen(platform)) continue;
       const perPlatform = (automation[platform] ?? []).find((a: any) => a._device_id === rec.id);
       if (!perPlatform) continue;
       const lang = LANG_BY_PLATFORM[platform];
@@ -126,7 +134,9 @@ export async function POST(request: Request) {
         // Text only — never touch status/posted_at/price/listing_url, which Suivi owns.
         await supabase.from("device_listings").update(fields).eq("id", existingId);
       } else {
-        const autoPosted = TIER_A.has(platform) && perPlatform._ready_to_publish;
+        // "Publier automatiquement" chosen -> online right away; otherwise it waits
+        // in Suivi as ready/generated until the user reviews and publishes it.
+        const autoPosted = isAuto(platform) && perPlatform._ready_to_publish;
         await supabase.from("device_listings").insert({
           device_id: deviceId,
           platform,
@@ -141,13 +151,14 @@ export async function POST(request: Request) {
 
   await supabase.from("runs").update({ publishable_count: publishableCount }).eq("id", run.id);
 
-  const exportRows = Object.entries(exports).map(([platform, e]) => ({
+  const exportRows = Object.entries(exports).filter(([platform]) => isChosen(platform)).map(([platform, e]) => ({
     run_id: run.id,
     platform,
     filename: e.filename,
     content: e.content,
   }));
   for (const platform of PLATFORMS) {
+    if (!isChosen(platform)) continue;
     const platformRecords = automation[platform];
     if (platformRecords && platformRecords.length > 0) {
       exportRows.push({

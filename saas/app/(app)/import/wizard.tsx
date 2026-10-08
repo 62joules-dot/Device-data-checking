@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, CardHeader } from "@/app/components/ui";
 import PlatformBadge from "@/app/platform-badge";
 import ManualDeviceForm from "./manual-form";
@@ -34,8 +34,27 @@ type ParseResult = {
   source_label: string;
 };
 
-const TIER_A = ["ebay", "dotmed", "machinio", "kitmondo", "exapro_prepared", "bimedis_prepared"];
-const TIER_B = ["leboncoin", "wallapop", "facebook"];
+// Where a device can go, and how. "auto" = a real bulk feed exists, so the
+// listing can go online at import time; "manual" = posted by hand from Suivi;
+// "file" = only an import file is produced (no listing tracked in Suivi).
+const TARGETS: { platform: string; kind: "auto" | "manual" | "file" }[] = [
+  { platform: "leboncoin", kind: "manual" },
+  { platform: "wallapop", kind: "manual" },
+  { platform: "facebook", kind: "manual" },
+  { platform: "ebay", kind: "auto" },
+  { platform: "machinio", kind: "auto" },
+  { platform: "kitmondo", kind: "auto" },
+  { platform: "dotmed", kind: "file" },
+  { platform: "exapro_prepared", kind: "file" },
+  { platform: "bimedis_prepared", kind: "file" },
+];
+
+type TargetChoice = { enabled: boolean; auto: boolean };
+const TARGETS_STORAGE_KEY = "import.targets";
+
+function defaultTargets(): Record<string, TargetChoice> {
+  return Object.fromEntries(TARGETS.map((t) => [t.platform, { enabled: true, auto: false }]));
+}
 
 export type ImportMode = "file" | "manual";
 
@@ -49,6 +68,23 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [records, setRecords] = useState<Record_[]>([]);
   const [confirmResult, setConfirmResult] = useState<{ total: number; publishable: number } | null>(null);
+  const [targets, setTargets] = useState<Record<string, TargetChoice>>(defaultTargets);
+
+  // Last import's platform choices come back as the default for the next one.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TARGETS_STORAGE_KEY) ?? "null");
+      if (saved && typeof saved === "object") setTargets({ ...defaultTargets(), ...saved });
+    } catch {
+      // storage unavailable — keep defaults
+    }
+  }, []);
+
+  function updateTarget(platform: string, patch: Partial<TargetChoice>) {
+    setTargets((t) => ({ ...t, [platform]: { ...t[platform], ...patch } }));
+  }
+
+  const selectedTargets = TARGETS.filter((t) => targets[t.platform]?.enabled);
 
   async function analyze(init: RequestInit) {
     setBusy(true);
@@ -84,10 +120,18 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
           automation: parsed.automation,
           exports: parsed.exports,
           source_label: parsed.source_label,
+          platforms: Object.fromEntries(
+            selectedTargets.map((t) => [t.platform, { auto: t.kind === "auto" && targets[t.platform].auto }])
+          ),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import impossible");
+      try {
+        localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(targets));
+      } catch {
+        // storage unavailable — choice just isn't remembered
+      }
       setConfirmResult(data);
       setStep(3);
       router.refresh();
@@ -240,24 +284,53 @@ export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () =>
 
       {step === 2 && (
         <Card className="p-6">
-          <h2 className="text-base font-semibold text-zinc-900">Préparer les annonces</h2>
+          <h2 className="text-base font-semibold text-zinc-900">Où publier ?</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            {includedCount} appareil{includedCount === 1 ? "" : "s"} seront enregistrés. Pour chaque plateforme :
+            {includedCount} appareil{includedCount === 1 ? "" : "s"} seront enregistrés. Coche les sites où publier :
+            les annonces sont préparées et sauvegardées dans le Suivi, où tu peux les relire avant de les mettre en ligne.
           </p>
-          <ul className="mt-3 space-y-1.5 text-sm">
-            {TIER_A.map((p) => (
-              <li key={p} className="flex items-center gap-2 text-zinc-600">
-                <PlatformBadge platform={p} />
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">Automatique — fichier d&apos;import</span>
-              </li>
-            ))}
-            {TIER_B.map((p) => (
-              <li key={p} className="flex items-center gap-2 text-zinc-600">
-                <PlatformBadge platform={p} />
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">Manuel — copier-coller, puis valider dans le Suivi</span>
-              </li>
-            ))}
+          <ul className="mt-4 divide-y divide-zinc-100 rounded-xl border border-zinc-200 text-sm">
+            {TARGETS.map((t) => {
+              const choice = targets[t.platform];
+              return (
+                <li key={t.platform} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+                  <label className="flex items-center gap-2.5 text-zinc-700">
+                    <input
+                      type="checkbox"
+                      checked={choice.enabled}
+                      onChange={(e) => updateTarget(t.platform, { enabled: e.target.checked })}
+                    />
+                    <PlatformBadge platform={t.platform} />
+                  </label>
+                  {!choice.enabled ? (
+                    <span className="text-xs text-zinc-400">Non publié</span>
+                  ) : t.kind === "auto" ? (
+                    <select
+                      value={choice.auto ? "auto" : "review"}
+                      onChange={(e) => updateTarget(t.platform, { auto: e.target.value === "auto" })}
+                      className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
+                    >
+                      <option value="review">Je relis l&apos;annonce d&apos;abord</option>
+                      <option value="auto">Publier automatiquement</option>
+                    </select>
+                  ) : t.kind === "manual" ? (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                      Manuel — à publier depuis le Suivi
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                      Fichier d&apos;import uniquement
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
+          {selectedTargets.length === 0 && (
+            <p className="mt-2 text-xs text-amber-600">
+              Aucun site coché : les appareils seront enregistrés sans annonce.
+            </p>
+          )}
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setStep(1)}>Retour</Button>
             <Button onClick={confirm} disabled={busy || includedCount === 0}>
