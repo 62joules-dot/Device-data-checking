@@ -6,3 +6,5 @@ MY_FILE/resultats/
 .DS_Store
 .venv/
 web/uploads/
+contacts_input/
+data/client_listing_devices.xlsx
