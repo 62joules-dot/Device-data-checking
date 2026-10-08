@@ -3,8 +3,6 @@ import DeviceGroup from "./device-group";
 import { Card, CardHeader, PageHeader } from "@/app/components/ui";
 import { PLATFORM_COLOR, LISTING_STATUS_LABEL } from "@/lib/colors";
 
-const DESCRIPTION_PRIORITY = ["leboncoin", "facebook", "wallapop", "ebay", "machinio", "kitmondo"];
-
 export default async function TrackingPage({
   searchParams,
 }: {
@@ -16,7 +14,7 @@ export default async function TrackingPage({
   let query = supabase
     .from("device_listings")
     .select(
-      "id, platform, title, short_description, long_description, status, listing_url, posted_at, price, created_at, device:devices(id, brand, model, device_type, price_recommended)"
+      "id, platform, title, status, listing_url, posted_at, price, created_at, device:devices(id, brand, model, device_type, price_recommended)"
     )
     .order("posted_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -26,27 +24,17 @@ export default async function TrackingPage({
 
   const { data: listings } = await query;
 
-  const groups = new Map<string, { deviceName: string; deviceId?: string; description: string | null; listings: any[] }>();
+  const groups = new Map<string, { deviceName: string; deviceId?: string; listings: any[] }>();
   for (const l of (listings ?? []) as any[]) {
     const key = l.device?.id ?? "unknown";
     if (!groups.has(key)) {
       groups.set(key, {
         deviceName: [l.device?.brand, l.device?.model].filter(Boolean).join(" ") || "—",
         deviceId: l.device?.id,
-        description: null,
         listings: [],
       });
     }
     groups.get(key)!.listings.push(l);
-  }
-  for (const group of groups.values()) {
-    for (const p of DESCRIPTION_PRIORITY) {
-      const match = group.listings.find((l) => l.platform === p && (l.long_description || l.short_description));
-      if (match) {
-        group.description = match.long_description || match.short_description;
-        break;
-      }
-    }
   }
   const deviceGroups = Array.from(groups.values());
 
@@ -104,7 +92,6 @@ export default async function TrackingPage({
                 key={g.deviceId ?? g.deviceName}
                 deviceId={g.deviceId}
                 deviceName={g.deviceName}
-                description={g.description}
                 listings={g.listings}
               />
             ))}

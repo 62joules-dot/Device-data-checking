@@ -18,10 +18,9 @@ type Listing = {
   device: { id?: string; brand: string | null; model: string | null; device_type: string | null; price_recommended?: number | null } | null;
 };
 
-export default function DeviceGroup({ deviceName, deviceId, description, listings }: {
+export default function DeviceGroup({ deviceName, deviceId, listings }: {
   deviceName: string;
   deviceId: string | undefined;
-  description: string | null;
   listings: Listing[];
 }) {
   const [open, setOpen] = useState(false);
@@ -44,18 +43,13 @@ export default function DeviceGroup({ deviceName, deviceId, description, listing
             <span className={`mt-0.5 inline-block text-zinc-400 transition-transform ${open ? "rotate-90" : ""}`}>
               ▶
             </span>
-            <span className="flex-1">
-              <span className="block font-medium text-zinc-900">
-                {deviceId ? (
-                  <a href={`/devices/${deviceId}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
-                    {deviceName}
-                  </a>
-                ) : (
-                  deviceName
-                )}
-              </span>
-              {description && (
-                <span className="mt-0.5 block line-clamp-2 text-xs text-zinc-500">{description}</span>
+            <span className="flex-1 font-medium text-zinc-900">
+              {deviceId ? (
+                <a href={`/devices/${deviceId}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
+                  {deviceName}
+                </a>
+              ) : (
+                deviceName
               )}
             </span>
             <span className="flex items-center gap-1 pt-0.5">
