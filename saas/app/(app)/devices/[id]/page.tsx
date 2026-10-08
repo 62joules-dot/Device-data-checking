@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardHeader, PageHeader } from "@/app/components/ui";
 import ListingRow from "../../tracking/listing-row";
 import PriceForm from "./price-form";
+import PhotoManager from "./photo-manager";
+import { resolvePhotos } from "@/lib/photo-fallback";
 
 export default async function DeviceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +19,10 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ i
     .select("id, platform, title, status, listing_url, posted_at, price")
     .eq("device_id", id)
     .order("platform");
+
+  const { data: bank } = await supabase.from("image_bank").select("*");
+  const ownPhotos = Array.isArray(device.photos) ? (device.photos as string[]) : [];
+  const fallback = resolvePhotos({ ...device, photos: [] }, bank ?? []).urls;
 
   const listingsWithDevice = (listings ?? []).map((l) => ({
     ...l,
@@ -50,6 +56,13 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ i
           </p>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader title="Photos" />
+        <div className="px-5 py-4">
+          <PhotoManager deviceId={device.id} photos={ownPhotos} fallback={fallback} />
+        </div>
+      </Card>
 
       <Card>
         <CardHeader title="Où c'est publié" />

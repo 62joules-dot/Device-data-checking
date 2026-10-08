@@ -11,6 +11,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const body = await request.json();
   const update: Record<string, unknown> = {};
+  if (Array.isArray(body.photos)) {
+    update.photos = body.photos.filter((p: unknown) => typeof p === "string" && p);
+  }
   if ("price_recommended" in body) {
     const price = body.price_recommended === "" || body.price_recommended === null
       ? null
