@@ -13,6 +13,7 @@ FIELDS = [
     "model",              # modèle
     "year",               # année
     "serial_number",      # numéro de série
+    "usage_counter",      # compteur (tirs, heures d'utilisation...)
     "options",            # options
     "accessories",        # accessoires
     "condition",          # état
@@ -37,6 +38,8 @@ ALIASES = {
     "model": ["model", "modele", "modl", "machine", "appareil", "designation", "reference", "ref"],
     "year": ["year", "annee", "an", "date"],
     "serial_number": ["serial", "serial number", "serial no", "sn", "numero de serie", "n serie", "num serie"],
+    "usage_counter": ["counter", "compteur", "compteur de tirs", "compteur tirs", "shots", "shot count",
+                       "nombre de tirs", "heures", "heures d utilisation", "hours", "usage"],
     "options": ["options", "option"],
     "accessories": ["accessories", "accessoires", "accessoire", "included", "inclus"],
     "condition": ["condition", "etat", "state", "grade"],

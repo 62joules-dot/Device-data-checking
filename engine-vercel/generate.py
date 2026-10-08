@@ -105,6 +105,14 @@ def generate(rec: dict) -> dict:
         "es": "Envío posible" if deliv == "yes" else ("Recogida en persona" if deliv == "no" else "Envío: a convenir"),
         "en": "Shipping available" if deliv == "yes" else ("Local pickup" if deliv == "no" else "Shipping: to arrange"),
     }
+    counter = rec.get("usage_counter")
+    counter_line = None
+    if counter and counter != MISSING:
+        counter_line = {
+            "fr": f"Compteur : {counter}",
+            "es": f"Contador: {counter}",
+            "en": f"Usage counter: {counter}",
+        }
 
     short = {
         "fr": f"{bm} — {label['fr'].lower()}, {_cond_word(rec.get('condition',''),'fr').lower()}. {_fmt_price(rec)}. {deliv_line['fr']}. Localisation : {country or 'à préciser'}.",
@@ -127,6 +135,7 @@ def generate(rec: dict) -> dict:
         return "\n".join([
             intro[lang],
             "",
+            *([counter_line[lang]] if counter_line else []),
             opts_line[lang],
             accs_line[lang],
             vat_line[lang],

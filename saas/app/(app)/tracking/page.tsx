@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import ListingRow from "./listing-row";
+import DeviceGroup from "./device-group";
 import { Card, CardHeader, PageHeader } from "@/app/components/ui";
 import { PLATFORM_COLOR, LISTING_STATUS_LABEL } from "@/lib/colors";
+
+const DESCRIPTION_PRIORITY = ["leboncoin", "facebook", "wallapop", "ebay", "machinio", "kitmondo"];
 
 export default async function TrackingPage({
   searchParams,
@@ -13,7 +15,9 @@ export default async function TrackingPage({
 
   let query = supabase
     .from("device_listings")
-    .select("id, platform, title, status, listing_url, posted_at, price, device:devices(id, brand, model, device_type, price_recommended)")
+    .select(
+      "id, platform, title, short_description, long_description, status, listing_url, posted_at, price, created_at, device:devices(id, brand, model, device_type, price_recommended)"
+    )
     .order("posted_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
@@ -21,6 +25,30 @@ export default async function TrackingPage({
   if (status) query = query.eq("status", status);
 
   const { data: listings } = await query;
+
+  const groups = new Map<string, { deviceName: string; deviceId?: string; description: string | null; listings: any[] }>();
+  for (const l of (listings ?? []) as any[]) {
+    const key = l.device?.id ?? "unknown";
+    if (!groups.has(key)) {
+      groups.set(key, {
+        deviceName: [l.device?.brand, l.device?.model].filter(Boolean).join(" ") || "—",
+        deviceId: l.device?.id,
+        description: null,
+        listings: [],
+      });
+    }
+    groups.get(key)!.listings.push(l);
+  }
+  for (const group of groups.values()) {
+    for (const p of DESCRIPTION_PRIORITY) {
+      const match = group.listings.find((l) => l.platform === p && (l.long_description || l.short_description));
+      if (match) {
+        group.description = match.long_description || match.short_description;
+        break;
+      }
+    }
+  }
+  const deviceGroups = Array.from(groups.values());
 
   return (
     <div className="space-y-6">
@@ -57,7 +85,7 @@ export default async function TrackingPage({
       </form>
 
       <Card>
-        <CardHeader title={`${listings?.length ?? 0} annonce${(listings?.length ?? 0) === 1 ? "" : "s"}`} />
+        <CardHeader title={`${deviceGroups.length} appareil${deviceGroups.length === 1 ? "" : "s"} · ${listings?.length ?? 0} annonce${(listings?.length ?? 0) === 1 ? "" : "s"}`} />
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-zinc-400">
             <tr>
@@ -71,10 +99,16 @@ export default async function TrackingPage({
             </tr>
           </thead>
           <tbody>
-            {(listings ?? []).map((l: any) => (
-              <ListingRow key={l.id} listing={l} />
+            {deviceGroups.map((g) => (
+              <DeviceGroup
+                key={g.deviceId ?? g.deviceName}
+                deviceId={g.deviceId}
+                deviceName={g.deviceName}
+                description={g.description}
+                listings={g.listings}
+              />
             ))}
-            {(listings ?? []).length === 0 && (
+            {deviceGroups.length === 0 && (
               <tr><td className="px-5 py-6 text-zinc-400" colSpan={7}>Aucune annonce pour ces filtres.</td></tr>
             )}
           </tbody>

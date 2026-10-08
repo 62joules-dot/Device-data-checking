@@ -38,6 +38,7 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ i
             <div><span className="text-zinc-400">Année</span><br />{device.year ?? "—"}</div>
             <div><span className="text-zinc-400">Pays</span><br />{device.country ?? "—"}</div>
             <div><span className="text-zinc-400">N° de série</span><br />{device.serial_number ?? "—"}</div>
+            <div><span className="text-zinc-400">Compteur</span><br />{device.usage_counter ?? "—"}</div>
           </div>
         </Card>
         <Card className="space-y-3 p-5">

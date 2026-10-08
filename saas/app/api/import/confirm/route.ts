@@ -15,18 +15,25 @@ const LANG_BY_PLATFORM: Record<string, string> = {
   kitmondo: "en",
 };
 
+// normalize.py uses the literal string "MISSING" as a sentinel for an empty
+// field, never invented — strip it to a real null before it reaches the DB.
+function clean(v: unknown) {
+  return v == null || v === "MISSING" ? null : v;
+}
+
 function deviceFields(rec: any) {
   const gen = rec.generated ?? {};
   return {
     external_id: rec.id ?? null,
     reference: rec._reference ?? null,
-    brand: rec.brand ?? null,
-    model: rec.model ?? null,
+    brand: clean(rec.brand),
+    model: clean(rec.model),
     device_type: gen.device_type ?? null,
-    year: rec.year ?? null,
-    serial_number: rec.serial_number ?? null,
-    condition: rec.condition ?? null,
-    country: rec.country ?? null,
+    year: clean(rec.year) != null ? parseInt(String(rec.year), 10) || null : null,
+    serial_number: clean(rec.serial_number),
+    usage_counter: clean(rec.usage_counter),
+    condition: clean(rec.condition),
+    country: clean(rec.country),
     price_recommended: rec.price_recommended ?? null,
     price_min: rec.price_min ?? null,
     price_premium: rec.price_premium ?? null,

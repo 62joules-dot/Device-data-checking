@@ -21,6 +21,10 @@ type Record_ = {
   generated?: any;
 };
 
+function v(x: unknown) {
+  return x == null || x === "MISSING" ? "" : String(x);
+}
+
 type ParseResult = {
   report: any;
   records: Record_[];
@@ -183,8 +187,8 @@ export default function ImportWizard() {
                         className="w-24 rounded-lg border border-zinc-200 px-2 py-1 font-mono text-xs"
                       />
                     </td>
-                    <td className="py-2 font-medium text-zinc-800">{r.brand} {r.model}</td>
-                    <td className="py-2 text-zinc-500">{r.year ?? "—"}</td>
+                    <td className="py-2 font-medium text-zinc-800">{v(r.brand)} {v(r.model)}</td>
+                    <td className="py-2 text-zinc-500">{v(r.year) || "—"}</td>
                     <td className="py-2 text-zinc-700">{r.price_recommended ? `${r.price_recommended} €` : "—"}</td>
                     <td className="py-2">
                       {r._duplicate_of ? (

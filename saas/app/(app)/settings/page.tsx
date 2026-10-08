@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import SetPasswordForm from "@/app/set-password-form";
 import { Card, CardHeader, PageHeader } from "@/app/components/ui";
+import ConnectionsForm from "./connections-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -19,6 +20,13 @@ export default async function SettingsPage() {
         <CardHeader title="Changer le mot de passe" />
         <div className="px-5 py-4">
           <SetPasswordForm />
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title="Connexions & API" />
+        <div className="px-5 py-4">
+          <ConnectionsForm />
         </div>
       </Card>
 

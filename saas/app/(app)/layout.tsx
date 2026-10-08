@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import NavLinks from "./nav-links";
+import UserMenu from "./user-menu";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -17,9 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
             <NavLinks />
           </div>
-          <a href="/settings" className="text-sm text-zinc-500 hover:text-zinc-900">
-            {user.email}
-          </a>
+          <UserMenu email={user.email ?? ""} />
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
