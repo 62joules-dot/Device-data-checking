@@ -17,12 +17,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "PYTHON_ENGINE_URL is not configured" }, { status: 500 });
   }
 
-  const form = await request.formData();
-  const file = form.get("file");
-  if (!(file instanceof Blob)) {
-    return NextResponse.json({ error: "missing 'file'" }, { status: 400 });
+  // Two inputs, same pipeline: an uploaded .xlsx (multipart "file"), or devices
+  // typed in the app (JSON { rows }) that the engine turns into a sheet itself.
+  let input: { xlsx_base64: string } | { rows: Record<string, unknown>[] };
+  let sourceLabel = "upload";
+  if ((request.headers.get("content-type") ?? "").includes("application/json")) {
+    const body = await request.json();
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "missing 'rows'" }, { status: 400 });
+    }
+    input = { rows };
+    sourceLabel = body.source_label || "Saisie manuelle";
+  } else {
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof Blob)) {
+      return NextResponse.json({ error: "missing 'file'" }, { status: 400 });
+    }
+    input = { xlsx_base64: Buffer.from(await file.arrayBuffer()).toString("base64") };
+    sourceLabel = (file as File).name ?? "upload";
   }
-  const xlsxBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
 
   const { data: contact } = await supabase
     .from("platform_credentials")
@@ -39,7 +54,7 @@ export async function POST(request: Request) {
       "Content-Type": "application/json",
       ...(process.env.PYTHON_ENGINE_API_KEY ? { "X-Api-Key": process.env.PYTHON_ENGINE_API_KEY } : {}),
     },
-    body: JSON.stringify({ xlsx_base64: xlsxBase64, config }),
+    body: JSON.stringify({ ...input, config }),
   });
   const result = await engineRes.json();
   if (!engineRes.ok) {
@@ -89,6 +104,6 @@ export async function POST(request: Request) {
     records,
     automation: result.automation ?? {},
     exports: result.exports ?? {},
-    source_label: (file as File).name ?? "upload",
+    source_label: sourceLabel,
   });
 }
