@@ -42,7 +42,7 @@ export default async function TrackingPage({
     <div className="space-y-6">
       <PageHeader
         title="Suivi des annonces"
-        description='Marque une annonce "en ligne" une fois postée manuellement, avec le prix et le lien — puis vendue, retirée, ou supprime-la du suivi.'
+        description='Chaque annonce attend ta relecture : clique « Relire et valider », vérifie le texte, puis valide pour l’envoyer. Rien ne part sans ta validation.'
       />
 
       <form className="flex flex-wrap items-center gap-3 text-sm">

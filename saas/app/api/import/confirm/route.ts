@@ -2,10 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 const PLATFORMS = ["leboncoin", "wallapop", "facebook", "ebay", "machinio", "kitmondo"] as const;
-// Real bulk feed / upload — the generated file IS the publish action, no manual
-// copy-paste. Tracked as already posted. Tier B (leboncoin/wallapop/facebook) stays
-// manual: posted only once the user pastes the real listing link in Suivi.
-const TIER_A = new Set(["ebay", "machinio", "kitmondo"]);
+// Nothing goes online at import: every listing waits in Suivi (ready/generated)
+// until the user has read it and clicked "Valider et publier".
 const LANG_BY_PLATFORM: Record<string, string> = {
   leboncoin: "fr",
   facebook: "fr",
@@ -57,13 +55,10 @@ export async function POST(request: Request) {
   const automation: Record<string, any[]> = body.automation ?? {};
   const exports: Record<string, { filename: string; content: string }> = body.exports ?? {};
   const sourceLabel: string = body.source_label ?? "upload";
-  // Platforms chosen in the import wizard, { platform: { auto } }. Absent ->
-  // legacy behavior: every platform, Tier A auto-posted.
-  const chosen: Record<string, { auto?: boolean }> | null =
+  // Platforms chosen in the import wizard, { platform: {} }. Absent -> all.
+  const chosen: Record<string, unknown> | null =
     body.platforms && typeof body.platforms === "object" ? body.platforms : null;
   const isChosen = (platform: string) => !chosen || platform in chosen;
-  const isAuto = (platform: string) =>
-    TIER_A.has(platform) && (chosen ? Boolean(chosen[platform]?.auto) : true);
 
   const included = records.filter((r) => r._include !== false);
 
@@ -134,15 +129,10 @@ export async function POST(request: Request) {
         // Text only — never touch status/posted_at/price/listing_url, which Suivi owns.
         await supabase.from("device_listings").update(fields).eq("id", existingId);
       } else {
-        // "Publier automatiquement" chosen -> online right away; otherwise it waits
-        // in Suivi as ready/generated until the user reviews and publishes it.
-        const autoPosted = isAuto(platform) && perPlatform._ready_to_publish;
         await supabase.from("device_listings").insert({
           device_id: deviceId,
           platform,
-          status: autoPosted ? "posted" : perPlatform._ready_to_publish ? "ready" : "generated",
-          posted_at: autoPosted ? new Date().toISOString() : null,
-          price: autoPosted ? rec.price_recommended ?? null : null,
+          status: perPlatform._ready_to_publish ? "ready" : "generated",
           ...fields,
         });
       }
