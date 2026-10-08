@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import PlatformBadge from "./platform-badge";
 
 type Listing = {
   platform: string;
@@ -9,15 +10,6 @@ type Listing = {
   short_description: string | null;
   long_description: string | null;
   status: string;
-};
-
-const PLATFORM_LABEL: Record<string, string> = {
-  leboncoin: "Leboncoin",
-  wallapop: "Wallapop",
-  facebook: "Facebook Marketplace",
-  ebay: "eBay",
-  machinio: "Machinio",
-  kitmondo: "Kitmondo",
 };
 
 // Tier A (ebay/machinio/kitmondo) ship as import files instead — see "Fichiers d'import" above.
@@ -70,7 +62,7 @@ export default function DeviceListings({ deviceId }: { deviceId: string }) {
             return (
               <div key={l.platform} className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-medium">{PLATFORM_LABEL[l.platform] ?? l.platform}</span>
+                  <span className="font-medium"><PlatformBadge platform={l.platform} /></span>
                   <button
                     onClick={() => copy(l.platform, text)}
                     className="text-slate-500 underline"

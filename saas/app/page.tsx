@@ -3,21 +3,20 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import UploadForm from "./upload-form";
 import DeviceListings from "./device-listings";
+import PlatformBadge from "./platform-badge";
 
-const EXPORT_LABEL: Record<string, string> = {
-  ebay: "eBay (CSV)",
-  dotmed: "DOTmed (TSV)",
-  machinio: "Machinio (CSV)",
-  kitmondo: "Kitmondo (CSV)",
-  exapro_prepared: "Exapro (CSV)",
-  bimedis_prepared: "Bimedis (CSV)",
-  leboncoin_automation: "Leboncoin (JSON)",
-  wallapop_automation: "Wallapop (JSON)",
-  facebook_automation: "Facebook (JSON)",
-  ebay_automation: "eBay (JSON)",
-  machinio_automation: "Machinio (JSON)",
-  kitmondo_automation: "Kitmondo (JSON)",
+const FORMAT_SUFFIX: Record<string, string> = {
+  ebay: "CSV",
+  dotmed: "TSV",
+  machinio: "CSV",
+  kitmondo: "CSV",
+  exapro_prepared: "CSV",
+  bimedis_prepared: "CSV",
 };
+
+function exportPlatformKey(platform: string) {
+  return platform.endsWith("_automation") ? platform.replace("_automation", "") : platform;
+}
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -58,9 +57,10 @@ export default async function Dashboard() {
     <main className="mx-auto max-w-5xl space-y-8 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">62joules — device listings</h1>
-        <Link href="/settings" className="text-sm text-slate-500 underline">
-          {user.email} · Settings
-        </Link>
+        <nav className="flex items-center gap-4 text-sm text-slate-500">
+          <Link href="/tracking" className="underline">Suivi des annonces</Link>
+          <Link href="/settings" className="underline">{user.email} · Settings</Link>
+        </nav>
       </div>
 
       <section className="space-y-3">
@@ -87,16 +87,21 @@ export default async function Dashboard() {
                 <td>{r.total_devices}</td>
                 <td>{r.publishable_count}</td>
                 <td>{new Date(r.created_at).toLocaleString()}</td>
-                <td className="space-x-2">
-                  {(exportsByRun.get(r.id) ?? []).map((e) => (
-                    <a
-                      key={e.id}
-                      href={`/exports/${e.id}`}
-                      className="text-slate-500 underline"
-                    >
-                      {EXPORT_LABEL[e.platform] ?? e.platform}
-                    </a>
-                  ))}
+                <td className="space-y-1">
+                  {(exportsByRun.get(r.id) ?? []).map((e) => {
+                    const key = exportPlatformKey(e.platform);
+                    const suffix = FORMAT_SUFFIX[key];
+                    return (
+                      <a
+                        key={e.id}
+                        href={`/exports/${e.id}`}
+                        className="block text-slate-500 underline"
+                      >
+                        <PlatformBadge platform={key} />
+                        {suffix ? ` (${suffix})` : " (JSON)"}
+                      </a>
+                    );
+                  })}
                 </td>
               </tr>
             ))}
