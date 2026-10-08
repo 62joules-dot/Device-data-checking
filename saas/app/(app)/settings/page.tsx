@@ -3,6 +3,7 @@ import SetPasswordForm from "@/app/set-password-form";
 import { Card, CardHeader, PageHeader } from "@/app/components/ui";
 import ConnectionsForm from "./connections-form";
 import ContactForm from "./contact-form";
+import GmailForm from "./gmail-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -28,6 +29,13 @@ export default async function SettingsPage() {
         <CardHeader title="Coordonnées des annonces" />
         <div className="px-5 py-4">
           <ContactForm />
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title="Envoi d'emails (Gmail)" />
+        <div className="px-5 py-4">
+          <GmailForm />
         </div>
       </Card>
 
