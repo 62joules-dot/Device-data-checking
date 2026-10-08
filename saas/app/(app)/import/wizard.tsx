@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Card, CardHeader } from "@/app/components/ui";
 import PlatformBadge from "@/app/platform-badge";
+import ManualDeviceForm from "./manual-form";
 
 type Record_ = {
   id: string;
@@ -36,9 +37,10 @@ type ParseResult = {
 const TIER_A = ["ebay", "dotmed", "machinio", "kitmondo", "exapro_prepared", "bimedis_prepared"];
 const TIER_B = ["leboncoin", "wallapop", "facebook"];
 
-const STEPS = ["Fichier", "Vérification", "Préparation", "Résultat"];
+export type ImportMode = "file" | "manual";
 
-export default function ImportWizard({ onDone }: { onDone?: () => void }) {
+export default function ImportWizard({ onDone, mode = "file" }: { onDone?: () => void; mode?: ImportMode }) {
+  const STEPS = [mode === "manual" ? "Saisie" : "Fichier", "Vérification", "Préparation", "Résultat"];
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
@@ -48,14 +50,11 @@ export default function ImportWizard({ onDone }: { onDone?: () => void }) {
   const [records, setRecords] = useState<Record_[]>([]);
   const [confirmResult, setConfirmResult] = useState<{ total: number; publishable: number } | null>(null);
 
-  async function analyze() {
-    if (!file) return;
+  async function analyze(init: RequestInit) {
     setBusy(true);
     setError(null);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const res = await fetch("/api/import/parse", { method: "POST", body });
+      const res = await fetch("/api/import/parse", { method: "POST", ...init });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analyse impossible");
       setParsed(data);
@@ -124,7 +123,19 @@ export default function ImportWizard({ onDone }: { onDone?: () => void }) {
         <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>
       )}
 
-      {step === 0 && (
+      {step === 0 && mode === "manual" && (
+        <ManualDeviceForm
+          busy={busy}
+          onSubmit={(row) =>
+            analyze({
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ rows: [row], source_label: "Saisie manuelle" }),
+            })
+          }
+        />
+      )}
+
+      {step === 0 && mode === "file" && (
         <Card className="p-6">
           <h2 className="text-base font-semibold text-zinc-900">Importer un fichier Excel</h2>
           <p className="mt-1 text-sm text-zinc-500">
@@ -137,7 +148,15 @@ export default function ImportWizard({ onDone }: { onDone?: () => void }) {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="text-sm"
             />
-            <Button onClick={analyze} disabled={!file || busy}>
+            <Button
+              onClick={() => {
+                if (!file) return;
+                const body = new FormData();
+                body.append("file", file);
+                analyze({ body });
+              }}
+              disabled={!file || busy}
+            >
               {busy ? "Analyse…" : "Analyser"}
             </Button>
           </div>
@@ -250,9 +269,9 @@ export default function ImportWizard({ onDone }: { onDone?: () => void }) {
 
       {step === 3 && confirmResult && (
         <Card className="p-6">
-          <h2 className="text-base font-semibold text-zinc-900">Import terminé</h2>
+          <h2 className="text-base font-semibold text-zinc-900">{mode === "manual" ? "Appareil ajouté" : "Import terminé"}</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            {confirmResult.total} appareils importés, {confirmResult.publishable} prêts à publier.
+            {confirmResult.total} appareil{confirmResult.total === 1 ? "" : "s"} enregistré{confirmResult.total === 1 ? "" : "s"}, {confirmResult.publishable} prêt{confirmResult.publishable === 1 ? "" : "s"} à publier.
           </p>
           <div className="mt-5 flex gap-2">
             {onDone ? (
@@ -261,6 +280,19 @@ export default function ImportWizard({ onDone }: { onDone?: () => void }) {
               <a href="/"><Button>Voir l&apos;inventaire</Button></a>
             )}
             <a href="/tracking"><Button variant="secondary">Aller au suivi des annonces</Button></a>
+            {mode === "manual" && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setParsed(null);
+                  setRecords([]);
+                  setConfirmResult(null);
+                  setStep(0);
+                }}
+              >
+                + Ajouter un autre appareil
+              </Button>
+            )}
           </div>
         </Card>
       )}

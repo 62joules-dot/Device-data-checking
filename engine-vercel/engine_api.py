@@ -53,9 +53,24 @@ def api_generate():
 
     body = request.get_json(silent=True) or {}
     xlsx_b64 = body.get("xlsx_base64")
+    rows = body.get("rows")
     config = body.get("config") or {}
 
-    if not xlsx_b64 and "file" in request.files:
+    if isinstance(rows, list) and rows:
+        # Devices typed in the app instead of uploaded: one dict per machine,
+        # keyed by any header spelling normalize.py's ALIASES understands.
+        # Written to a real .xlsx so they go through the exact same pipeline.
+        import io
+        import pandas as pd
+
+        clean_rows = [
+            {k: (None if v is None or str(v).strip() == "" else v) for k, v in r.items()}
+            for r in rows if isinstance(r, dict)
+        ]
+        buf = io.BytesIO()
+        pd.DataFrame(clean_rows).to_excel(buf, index=False)
+        xlsx_bytes = buf.getvalue()
+    elif not xlsx_b64 and "file" in request.files:
         xlsx_bytes = request.files["file"].read()
     elif xlsx_b64:
         try:
@@ -63,7 +78,7 @@ def api_generate():
         except Exception:
             return jsonify({"error": "xlsx_base64 is not valid base64"}), 400
     else:
-        return jsonify({"error": "provide 'file' (multipart) or 'xlsx_base64' (JSON)"}), 400
+        return jsonify({"error": "provide 'file' (multipart), 'xlsx_base64' or 'rows' (JSON)"}), 400
 
     with tempfile.TemporaryDirectory() as tmp:
         xlsx_path = os.path.join(tmp, "input.xlsx")

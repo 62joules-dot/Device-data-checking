@@ -145,7 +145,7 @@ export default async function Dashboard() {
               </tr>
             ))}
             {(devices ?? []).length === 0 && (
-              <tr><td className="px-5 py-6 text-zinc-400" colSpan={7}>Aucun appareil — importe un fichier Excel pour commencer.</td></tr>
+              <tr><td className="px-5 py-6 text-zinc-400" colSpan={7}>Aucun appareil — ajoute une machine ou importe un fichier Excel pour commencer.</td></tr>
             )}
           </tbody>
         </table>
