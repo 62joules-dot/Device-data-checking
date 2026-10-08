@@ -37,16 +37,24 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
   const [url, setUrl] = useState(listing.listing_url ?? "");
   const [price, setPrice] = useState(listing.price?.toString() ?? "");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
-    await fetch(`/api/listings/${listing.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    setBusy(false);
-    router.refresh();
+    setError(null);
+    try {
+      const res = await fetch(`/api/listings/${listing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Échec");
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Échec");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function markPosted() {
@@ -59,18 +67,23 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
     setEditing(false);
   }
 
-  async function remove() {
-    if (!confirm("Supprimer cette annonce du suivi ?")) return;
-    setBusy(true);
-    await fetch(`/api/listings/${listing.id}`, { method: "DELETE" });
-    setBusy(false);
-    router.refresh();
+  // Auto platforms go straight back online; manual ones return to "ready" and
+  // need the new link once reposted by hand.
+  async function republish() {
+    const auto = TIER_A.has(listing.platform);
+    await patch(
+      auto
+        ? { status: "posted", price: devicePrice ?? listing.price }
+        : { status: "ready", posted_at: null, listing_url: null }
+    );
+    if (!auto) setUrl("");
   }
 
   const isPosted = listing.status === "posted" || listing.status === "sold" || listing.status === "removed";
   const devicePrice = listing.device?.price_recommended ?? null;
   const priceStale =
-    listing.status === "posted" && listing.price != null && devicePrice != null && listing.price !== devicePrice;
+    listing.status === "posted" && listing.price != null && devicePrice != null &&
+    Number(listing.price) !== Number(devicePrice);
 
   return (
     <tr className="border-t border-zinc-100 align-top">
@@ -138,7 +151,7 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
       </td>
       <td className="space-x-1 px-5 py-3 text-xs">
         {!isPosted && (
-          <Button variant="secondary" onClick={markPosted} disabled={busy}>
+          <Button onClick={markPosted} disabled={busy}>
             {TIER_A.has(listing.platform) ? "Automatiser la publication" : "Marquer en ligne"}
           </Button>
         )}
@@ -154,12 +167,14 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
           </Button>
         )}
         {listing.status === "posted" && (
-          <>
-            <Button variant="ghost" onClick={() => patch({ status: "sold" })} disabled={busy}>Vendue</Button>
-            <Button variant="ghost" onClick={() => patch({ status: "removed" })} disabled={busy}>Retirer</Button>
-          </>
+          <Button variant="ghost" onClick={() => patch({ status: "sold" })} disabled={busy}>Vendue</Button>
         )}
-        <Button variant="danger" onClick={remove} disabled={busy}>Supprimer</Button>
+        {(listing.status === "sold" || listing.status === "removed") ? (
+          <Button onClick={republish} disabled={busy}>Republier</Button>
+        ) : (
+          <Button variant="danger" onClick={() => patch({ status: "removed" })} disabled={busy}>Retirer</Button>
+        )}
+        {error && <div className="mt-1 text-red-600">{error}</div>}
       </td>
     </tr>
   );

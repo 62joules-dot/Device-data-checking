@@ -24,13 +24,22 @@ export async function POST(request: Request) {
   }
   const xlsxBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
 
+  const { data: contact } = await supabase
+    .from("platform_credentials")
+    .select("credentials")
+    .eq("platform", "contact")
+    .maybeSingle();
+  const config: Record<string, string> = {};
+  if (contact?.credentials?.phone) config.phone = contact.credentials.phone;
+  if (contact?.credentials?.email) config.email = contact.credentials.email;
+
   const engineRes = await fetch(`${engineUrl}/api/generate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(process.env.PYTHON_ENGINE_API_KEY ? { "X-Api-Key": process.env.PYTHON_ENGINE_API_KEY } : {}),
     },
-    body: JSON.stringify({ xlsx_base64: xlsxBase64 }),
+    body: JSON.stringify({ xlsx_base64: xlsxBase64, config }),
   });
   const result = await engineRes.json();
   if (!engineRes.ok) {

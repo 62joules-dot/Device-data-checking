@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import ListingRow from "./listing-row";
+import GeneratedPanel from "./generated-panel";
 import PlatformBadge from "@/app/platform-badge";
+import { Button } from "@/app/components/ui";
 
 type Listing = {
   id: string;
   platform: string;
   title: string | null;
+  long_description: string | null;
   status: string;
   listing_url: string | null;
   posted_at: string | null;
@@ -21,6 +24,7 @@ export default function DeviceGroup({ deviceName, deviceId, listings }: {
   listings: Listing[];
 }) {
   const [open, setOpen] = useState(false);
+  const [generated, setGenerated] = useState(false);
   const allPlatforms = Array.from(new Set(listings.map((l) => l.platform)));
   const [selected, setSelected] = useState<Set<string>>(new Set(allPlatforms));
 
@@ -66,6 +70,23 @@ export default function DeviceGroup({ deviceName, deviceId, listings }: {
             onToggleSelect={() => toggle(l.platform)}
           />
         ))}
+      {open && (
+        <tr className="border-t border-zinc-100">
+          <td colSpan={7} className="space-y-3 px-5 py-4">
+            <Button onClick={() => setGenerated((g) => !g)} disabled={selected.size === 0}>
+              {generated
+                ? "Masquer les annonces"
+                : `Générer les annonces (${selected.size} plateforme${selected.size > 1 ? "s" : ""})`}
+            </Button>
+            {selected.size === 0 && (
+              <p className="text-xs text-zinc-400">Coche au moins une plateforme.</p>
+            )}
+            {generated && selected.size > 0 && (
+              <GeneratedPanel listings={listings.filter((l) => selected.has(l.platform))} />
+            )}
+          </td>
+        </tr>
+      )}
     </>
   );
 }

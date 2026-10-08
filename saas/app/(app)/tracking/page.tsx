@@ -14,7 +14,7 @@ export default async function TrackingPage({
   let query = supabase
     .from("device_listings")
     .select(
-      "id, platform, title, status, listing_url, posted_at, price, created_at, device:devices(id, brand, model, device_type, price_recommended)"
+      "id, platform, title, long_description, status, listing_url, posted_at, price, created_at, device:devices(id, brand, model, device_type, price_recommended)"
     )
     .order("posted_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });

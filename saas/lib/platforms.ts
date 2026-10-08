@@ -28,3 +28,10 @@ export function platformIconUrl(domain: string) {
 // Real bulk feed/upload: the generated file IS the publish action, no manual
 // copy-paste. Everything else needs a human to post, by hand, on the site.
 export const TIER_A = new Set(["ebay", "machinio", "kitmondo", "dotmed"]);
+
+// Where to post by hand on the manual platforms.
+export const POST_URL: Record<string, string> = {
+  leboncoin: "https://www.leboncoin.fr/deposer-une-annonce",
+  wallapop: "https://es.wallapop.com/app/catalog/upload",
+  facebook: "https://www.facebook.com/marketplace/create/item",
+};

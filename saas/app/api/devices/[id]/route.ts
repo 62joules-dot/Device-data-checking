@@ -12,9 +12,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
   const update: Record<string, unknown> = {};
   if ("price_recommended" in body) {
-    update.price_recommended = body.price_recommended === "" || body.price_recommended === null
+    const price = body.price_recommended === "" || body.price_recommended === null
       ? null
       : Number(body.price_recommended);
+    update.price_recommended = price;
+
+    // Keep the "Prêt / Données manquantes" flag in sync with the price.
+    const { data: current } = await supabase.from("devices").select("missing_fields").eq("id", id).single();
+    const others = ((current?.missing_fields as string[]) ?? []).filter((f) => f !== "price_recommended");
+    const missing = price == null ? [...others, "price_recommended"] : others;
+    update.missing_fields = missing;
+    update.publishable = missing.length === 0;
   }
 
   const { error } = await supabase.from("devices").update(update).eq("id", id);

@@ -14,19 +14,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "device_type is required" }, { status: 400 });
   }
 
-  const { data: sold } = await supabase
+  const { data: soldAll } = await supabase
     .from("device_listings")
-    .select("price, platform, posted_at, device:devices!inner(brand, model, device_type, year, condition)")
+    .select("price, platform, posted_at, device:devices(brand, model, device_type, year, condition)")
     .eq("status", "sold")
-    .eq("device.device_type", deviceType)
     .not("price", "is", null);
+  const sold = (soldAll ?? []).filter((s: any) => s.device?.device_type === deviceType);
 
-  let refQuery = supabase
+  const { data: references } = await supabase
     .from("price_references")
     .select("*")
     .eq("device_type", deviceType)
     .order("price", { ascending: true });
-  const { data: references } = await refQuery;
 
   let brandReferences: typeof references = [];
   if (brand) {
@@ -39,7 +38,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    sold: sold ?? [],
+    sold,
     references: references ?? [],
     brandReferences,
   });
