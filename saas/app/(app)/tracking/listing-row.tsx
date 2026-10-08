@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import PlatformBadge from "../platform-badge";
+import PlatformBadge from "@/app/platform-badge";
+import { Badge, Button } from "@/app/components/ui";
+import { LISTING_STATUS_COLOR, LISTING_STATUS_LABEL } from "@/lib/colors";
 
 type Listing = {
   id: string;
@@ -62,100 +64,72 @@ export default function ListingRow({ listing }: { listing: Listing }) {
   const isPosted = listing.status === "posted" || listing.status === "sold" || listing.status === "removed";
 
   return (
-    <tr className="border-t border-slate-200 align-top">
-      <td className="py-2">{deviceName}</td>
-      <td><PlatformBadge platform={listing.platform} /></td>
-      <td>
+    <tr className="border-t border-zinc-100 align-top">
+      <td className="px-5 py-3 font-medium text-zinc-800">{deviceName}</td>
+      <td className="py-3"><PlatformBadge platform={listing.platform} /></td>
+      <td className="py-3">
         {editing || !isPosted ? (
           <input
             type="number"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="€"
-            className="w-20 rounded border border-slate-300 px-2 py-1 text-sm"
+            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
           />
         ) : (
           listing.price ? `${listing.price} €` : "—"
         )}
       </td>
-      <td>
+      <td className="py-3">
         {listing.posted_at ? (
           <span>
             {new Date(listing.posted_at).toLocaleDateString()}
             <br />
-            <span className="text-xs text-slate-400">{daysSince(listing.posted_at)}</span>
+            <span className="text-xs text-zinc-400">{daysSince(listing.posted_at)}</span>
           </span>
         ) : (
           "—"
         )}
       </td>
-      <td>
+      <td className="py-3">
         {editing || !isPosted ? (
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://…"
-            className="w-40 rounded border border-slate-300 px-2 py-1 text-sm"
+            className="w-40 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
           />
         ) : listing.listing_url ? (
-          <a href={listing.listing_url} target="_blank" rel="noreferrer" className="text-slate-500 underline">
+          <a href={listing.listing_url} target="_blank" rel="noreferrer" className="text-blue-600 underline">
             Voir l&apos;annonce
           </a>
         ) : (
           "—"
         )}
       </td>
-      <td>
-        <span
-          className={
-            listing.status === "sold"
-              ? "text-green-600"
-              : listing.status === "removed"
-              ? "text-slate-400"
-              : listing.status === "posted"
-              ? "text-teal-600"
-              : "text-amber-600"
-          }
-        >
-          {{
-            generated: "généré",
-            ready: "prêt",
-            posted: "en ligne",
-            sold: "vendue",
-            removed: "retirée",
-          }[listing.status] ?? listing.status}
-        </span>
+      <td className="py-3">
+        <Badge color={LISTING_STATUS_COLOR[listing.status] ?? "#9a988f"}>
+          {LISTING_STATUS_LABEL[listing.status] ?? listing.status}
+        </Badge>
       </td>
-      <td className="space-x-2 text-xs">
+      <td className="space-x-1 px-5 py-3 text-xs">
         {!isPosted && (
-          <button onClick={markPosted} disabled={busy} className="text-teal-600 underline">
-            Marquer en ligne
-          </button>
+          <Button variant="secondary" onClick={markPosted} disabled={busy}>Marquer en ligne</Button>
         )}
         {isPosted && !editing && (
-          <button onClick={() => setEditing(true)} disabled={busy} className="text-slate-500 underline">
-            Modifier
-          </button>
+          <Button variant="ghost" onClick={() => setEditing(true)} disabled={busy}>Modifier</Button>
         )}
         {isPosted && editing && (
-          <button onClick={saveEdits} disabled={busy} className="text-teal-600 underline">
-            Enregistrer
-          </button>
+          <Button variant="secondary" onClick={saveEdits} disabled={busy}>Enregistrer</Button>
         )}
         {listing.status === "posted" && (
           <>
-            <button onClick={() => patch({ status: "sold" })} disabled={busy} className="text-green-600 underline">
-              Vendue
-            </button>
-            <button onClick={() => patch({ status: "removed" })} disabled={busy} className="text-slate-500 underline">
-              Retirer
-            </button>
+            <Button variant="ghost" onClick={() => patch({ status: "sold" })} disabled={busy}>Vendue</Button>
+            <Button variant="ghost" onClick={() => patch({ status: "removed" })} disabled={busy}>Retirer</Button>
           </>
         )}
-        <button onClick={remove} disabled={busy} className="text-red-500 underline">
-          Supprimer
-        </button>
+        <Button variant="danger" onClick={remove} disabled={busy}>Supprimer</Button>
       </td>
     </tr>
   );

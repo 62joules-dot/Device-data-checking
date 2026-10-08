@@ -18,45 +18,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const engineUrl = process.env.PYTHON_ENGINE_URL;
-  if (!engineUrl) {
-    return NextResponse.json({ error: "PYTHON_ENGINE_URL is not configured" }, { status: 500 });
-  }
+  const body = await request.json();
+  const records: any[] = body.records ?? [];
+  const automation: Record<string, any[]> = body.automation ?? {};
+  const exports: Record<string, { filename: string; content: string }> = body.exports ?? {};
+  const sourceLabel: string = body.source_label ?? "upload";
 
-  const form = await request.formData();
-  const file = form.get("file");
-  if (!(file instanceof Blob)) {
-    return NextResponse.json({ error: "missing 'file'" }, { status: 400 });
-  }
-
-  const xlsxBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-
-  const engineRes = await fetch(`${engineUrl}/api/generate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(process.env.PYTHON_ENGINE_API_KEY
-        ? { "X-Api-Key": process.env.PYTHON_ENGINE_API_KEY }
-        : {}),
-    },
-    body: JSON.stringify({ xlsx_base64: xlsxBase64 }),
-  });
-
-  const result = await engineRes.json();
-  if (!engineRes.ok) {
-    return NextResponse.json({ error: result.error || "engine error" }, { status: 502 });
-  }
-
-  const master: any[] = result.master_database ?? [];
-  const automation: Record<string, any[]> = result.automation ?? {};
-  const exports: Record<string, { filename: string; content: string }> = result.exports ?? {};
+  const included = records.filter((r) => r._include !== false);
 
   const { data: run, error: runError } = await supabase
     .from("runs")
     .insert({
       user_id: user.id,
-      source_label: (file as File).name ?? "upload",
-      total_devices: master.length,
+      source_label: sourceLabel,
+      total_devices: included.length,
       publishable_count: 0,
     })
     .select()
@@ -68,13 +43,14 @@ export async function POST(request: Request) {
 
   let publishableCount = 0;
 
-  for (const rec of master) {
+  for (const rec of included) {
     const gen = rec.generated ?? {};
     const { data: device, error: deviceError } = await supabase
       .from("devices")
       .insert({
         user_id: user.id,
         external_id: rec.id ?? null,
+        reference: rec._reference ?? null,
         brand: rec.brand ?? null,
         model: rec.model ?? null,
         device_type: gen.device_type ?? null,
@@ -99,9 +75,7 @@ export async function POST(request: Request) {
 
     const listingsRows = PLATFORMS
       .map((platform) => {
-        const perPlatform = (automation[platform] ?? []).find(
-          (a: any) => a._device_id === rec.id
-        );
+        const perPlatform = (automation[platform] ?? []).find((a: any) => a._device_id === rec.id);
         if (!perPlatform) return null;
         const lang = LANG_BY_PLATFORM[platform];
         return {
@@ -121,10 +95,7 @@ export async function POST(request: Request) {
     }
   }
 
-  await supabase
-    .from("runs")
-    .update({ publishable_count: publishableCount })
-    .eq("id", run.id);
+  await supabase.from("runs").update({ publishable_count: publishableCount }).eq("id", run.id);
 
   const exportRows = Object.entries(exports).map(([platform, e]) => ({
     run_id: run.id,
@@ -132,25 +103,24 @@ export async function POST(request: Request) {
     filename: e.filename,
     content: e.content,
   }));
-
-  // Per-platform automation JSON (leboncoin/wallapop/facebook/ebay/machinio/kitmondo),
-  // same shape run_all.build_automation_record produces — downloadable alongside the
-  // Tier-A CSV/TSV files, not just stored as title/description in device_listings.
   for (const platform of PLATFORMS) {
-    const records = automation[platform];
-    if (records && records.length > 0) {
+    const platformRecords = automation[platform];
+    if (platformRecords && platformRecords.length > 0) {
       exportRows.push({
         run_id: run.id,
         platform: `${platform}_automation`,
         filename: `${platform}.json`,
-        content: JSON.stringify(records, null, 2),
+        content: JSON.stringify(platformRecords, null, 2),
       });
     }
   }
-
   if (exportRows.length > 0) {
     await supabase.from("run_exports").insert(exportRows);
   }
 
-  return NextResponse.json({ report: result.report, total: master.length, publishable: publishableCount });
+  return NextResponse.json({
+    run_id: run.id,
+    total: included.length,
+    publishable: publishableCount,
+  });
 }
