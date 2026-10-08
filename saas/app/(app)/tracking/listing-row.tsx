@@ -14,7 +14,7 @@ type Listing = {
   listing_url: string | null;
   posted_at: string | null;
   price: number | null;
-  device: { brand: string | null; model: string | null; device_type: string | null } | null;
+  device: { id?: string; brand: string | null; model: string | null; device_type: string | null; price_recommended?: number | null } | null;
 };
 
 function daysSince(iso: string) {
@@ -62,10 +62,19 @@ export default function ListingRow({ listing }: { listing: Listing }) {
 
   const deviceName = [listing.device?.brand, listing.device?.model].filter(Boolean).join(" ") || "—";
   const isPosted = listing.status === "posted" || listing.status === "sold" || listing.status === "removed";
+  const devicePrice = listing.device?.price_recommended ?? null;
+  const priceStale =
+    listing.status === "posted" && listing.price != null && devicePrice != null && listing.price !== devicePrice;
 
   return (
     <tr className="border-t border-zinc-100 align-top">
-      <td className="px-5 py-3 font-medium text-zinc-800">{deviceName}</td>
+      <td className="px-5 py-3 font-medium text-zinc-800">
+        {listing.device?.id ? (
+          <a href={`/devices/${listing.device.id}`} className="hover:underline">{deviceName}</a>
+        ) : (
+          deviceName
+        )}
+      </td>
       <td className="py-3"><PlatformBadge platform={listing.platform} /></td>
       <td className="py-3">
         {editing || !isPosted ? (
@@ -112,6 +121,11 @@ export default function ListingRow({ listing }: { listing: Listing }) {
         <Badge color={LISTING_STATUS_COLOR[listing.status] ?? "#9a988f"}>
           {LISTING_STATUS_LABEL[listing.status] ?? listing.status}
         </Badge>
+        {priceStale && (
+          <div className="mt-1 text-xs text-amber-600">
+            ⚠️ À changer à la main ({listing.price} € → {devicePrice} €)
+          </div>
+        )}
       </td>
       <td className="space-x-1 px-5 py-3 text-xs">
         {!isPosted && (
@@ -122,6 +136,11 @@ export default function ListingRow({ listing }: { listing: Listing }) {
         )}
         {isPosted && editing && (
           <Button variant="secondary" onClick={saveEdits} disabled={busy}>Enregistrer</Button>
+        )}
+        {priceStale && (
+          <Button variant="ghost" onClick={() => patch({ price: devicePrice })} disabled={busy}>
+            Prix mis à jour
+          </Button>
         )}
         {listing.status === "posted" && (
           <>

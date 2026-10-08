@@ -132,7 +132,9 @@ export default async function Dashboard() {
             {(devices ?? []).map((d) => (
               <tr key={d.id} className="border-t border-zinc-100">
                 <td className="px-5 py-2.5 font-mono text-xs text-zinc-400">{d.reference ?? "—"}</td>
-                <td className="py-2.5 font-medium text-zinc-800">{d.brand} {d.model}</td>
+                <td className="py-2.5 font-medium text-zinc-800">
+                  <Link href={`/devices/${d.id}`} className="hover:underline">{d.brand} {d.model}</Link>
+                </td>
                 <td className="py-2.5 text-zinc-500">{d.condition}</td>
                 <td className="py-2.5 text-zinc-500">{d.country}</td>
                 <td className="py-2.5 text-zinc-700">{d.price_recommended ? `${d.price_recommended} €` : "—"}</td>

@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 const PLATFORMS = ["leboncoin", "wallapop", "facebook", "ebay", "machinio", "kitmondo"] as const;
+// Real bulk feed / upload — the generated file IS the publish action, no manual
+// copy-paste. Tracked as already posted. Tier B (leboncoin/wallapop/facebook) stays
+// manual: posted only once the user pastes the real listing link in Suivi.
+const TIER_A = new Set(["ebay", "machinio", "kitmondo"]);
 const LANG_BY_PLATFORM: Record<string, string> = {
   leboncoin: "fr",
   facebook: "fr",
@@ -112,12 +116,16 @@ export async function POST(request: Request) {
 
       const existingId = existingListingId.get(`${deviceId}|${platform}`);
       if (existingId) {
+        // Text only — never touch status/posted_at/price/listing_url, which Suivi owns.
         await supabase.from("device_listings").update(fields).eq("id", existingId);
       } else {
+        const autoPosted = TIER_A.has(platform) && perPlatform._ready_to_publish;
         await supabase.from("device_listings").insert({
           device_id: deviceId,
           platform,
-          status: perPlatform._ready_to_publish ? "ready" : "generated",
+          status: autoPosted ? "posted" : perPlatform._ready_to_publish ? "ready" : "generated",
+          posted_at: autoPosted ? new Date().toISOString() : null,
+          price: autoPosted ? rec.price_recommended ?? null : null,
           ...fields,
         });
       }

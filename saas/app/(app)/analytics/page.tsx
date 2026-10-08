@@ -14,7 +14,7 @@ export default async function AnalyticsPage({
 
   let query = supabase
     .from("device_listings")
-    .select("platform, status, price, posted_at, created_at");
+    .select("platform, status, price, posted_at, created_at, device:devices(id, brand, model, price_recommended)");
   if (platform) query = query.eq("platform", platform);
   if (period && period !== "all") {
     const days = parseInt(period, 10);
@@ -30,11 +30,18 @@ export default async function AnalyticsPage({
   let valueSold = 0;
   let countPosted = 0;
   let countSold = 0;
+  let needsPriceUpdate: { device: any; platform: string; price: number | null }[] = [];
 
-  for (const r of rows) {
+  for (const r of rows as any[]) {
     byStatus.set(r.status, (byStatus.get(r.status) ?? 0) + 1);
     byPlatform.set(r.platform, (byPlatform.get(r.platform) ?? 0) + 1);
-    if (r.status === "posted") { valuePosted += r.price ?? 0; countPosted += 1; }
+    if (r.status === "posted") {
+      valuePosted += r.price ?? 0;
+      countPosted += 1;
+      if (r.price != null && r.device?.price_recommended != null && r.price !== r.device.price_recommended) {
+        needsPriceUpdate.push({ device: r.device, platform: r.platform, price: r.price });
+      }
+    }
     if (r.status === "sold") { valueSold += r.price ?? 0; countSold += 1; }
   }
 
@@ -70,7 +77,7 @@ export default async function AnalyticsPage({
         <StatTile label="Annonces en ligne" value={countPosted} hint={`${valuePosted.toLocaleString("fr-FR")} €`} />
         <StatTile label="Annonces vendues" value={countSold} hint={`${valueSold.toLocaleString("fr-FR")} €`} />
         <StatTile label="Taux de conversion" value={`${conversion}%`} hint="vendues / (vendues + en ligne)" />
-        <StatTile label="Total annonces" value={rows.length} />
+        <StatTile label="Prix à mettre à jour" value={needsPriceUpdate.length} hint={needsPriceUpdate.length ? "à changer à la main" : undefined} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -102,6 +109,25 @@ export default async function AnalyticsPage({
           {byPlatform.size === 0 && <p className="text-sm text-zinc-400">Aucune donnée.</p>}
         </Card>
       </div>
+
+      {needsPriceUpdate.length > 0 && (
+        <Card>
+          <CardHeader title="Prix à mettre à jour à la main" />
+          <ul className="divide-y divide-zinc-100 px-5">
+            {needsPriceUpdate.map((item, i) => (
+              <li key={i} className="flex items-center justify-between py-2.5 text-sm">
+                <a href={`/devices/${item.device?.id}`} className="font-medium text-zinc-800 hover:underline">
+                  {item.device?.brand} {item.device?.model}
+                </a>
+                <span className="flex items-center gap-2 text-zinc-500">
+                  <PlatformBadge platform={item.platform} />
+                  <span className="text-amber-600">{item.price} € → {item.device?.price_recommended} €</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }
