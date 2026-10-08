@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import UploadForm from "./upload-form";
-import SetPasswordForm from "./set-password-form";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -24,15 +24,10 @@ export default async function Dashboard() {
     <main className="mx-auto max-w-5xl space-y-8 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">62joules — device listings</h1>
-        <form action="/auth/signout" method="post">
-          <span className="text-sm text-slate-500">{user.email}</span>
-        </form>
+        <Link href="/settings" className="text-sm text-slate-500 underline">
+          {user.email} · Settings
+        </Link>
       </div>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-slate-600">Account</h2>
-        <SetPasswordForm />
-      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-slate-600">Generate from inventory</h2>
