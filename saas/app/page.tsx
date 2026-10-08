@@ -5,12 +5,18 @@ import UploadForm from "./upload-form";
 import DeviceListings from "./device-listings";
 
 const EXPORT_LABEL: Record<string, string> = {
-  ebay: "eBay",
-  dotmed: "DOTmed",
-  machinio: "Machinio",
-  kitmondo: "Kitmondo",
-  exapro_prepared: "Exapro",
-  bimedis_prepared: "Bimedis",
+  ebay: "eBay (CSV)",
+  dotmed: "DOTmed (TSV)",
+  machinio: "Machinio (CSV)",
+  kitmondo: "Kitmondo (CSV)",
+  exapro_prepared: "Exapro (CSV)",
+  bimedis_prepared: "Bimedis (CSV)",
+  leboncoin_automation: "Leboncoin (JSON)",
+  wallapop_automation: "Wallapop (JSON)",
+  facebook_automation: "Facebook (JSON)",
+  ebay_automation: "eBay (JSON)",
+  machinio_automation: "Machinio (JSON)",
+  kitmondo_automation: "Kitmondo (JSON)",
 };
 
 export default async function Dashboard() {

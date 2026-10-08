@@ -132,6 +132,22 @@ export async function POST(request: Request) {
     filename: e.filename,
     content: e.content,
   }));
+
+  // Per-platform automation JSON (leboncoin/wallapop/facebook/ebay/machinio/kitmondo),
+  // same shape run_all.build_automation_record produces — downloadable alongside the
+  // Tier-A CSV/TSV files, not just stored as title/description in device_listings.
+  for (const platform of PLATFORMS) {
+    const records = automation[platform];
+    if (records && records.length > 0) {
+      exportRows.push({
+        run_id: run.id,
+        platform: `${platform}_automation`,
+        filename: `${platform}.json`,
+        content: JSON.stringify(records, null, 2),
+      });
+    }
+  }
+
   if (exportRows.length > 0) {
     await supabase.from("run_exports").insert(exportRows);
   }

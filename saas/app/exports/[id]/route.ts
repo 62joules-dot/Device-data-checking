@@ -21,6 +21,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const contentType = row.filename.endsWith(".tsv")
     ? "text/tab-separated-values"
+    : row.filename.endsWith(".json")
+    ? "application/json"
     : "text/csv";
 
   return new NextResponse(row.content, {
