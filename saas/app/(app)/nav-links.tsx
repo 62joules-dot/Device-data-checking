@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/", label: "Appareils" },
   { href: "/tracking", label: "Suivi" },
   { href: "/analytics", label: "Tableau de bord" },
+  { href: "/pricing", label: "Simulateur de prix" },
 ];
 
 export default function NavLinks() {

@@ -18,6 +18,12 @@ type Listing = {
   device: { id?: string; brand: string | null; model: string | null; device_type: string | null; price_recommended?: number | null } | null;
 };
 
+type Props = {
+  listing: Listing;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+};
+
 function daysSince(iso: string) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (days <= 0) return "aujourd'hui";
@@ -25,7 +31,7 @@ function daysSince(iso: string) {
   return `${days} jours`;
 }
 
-export default function ListingRow({ listing }: { listing: Listing }) {
+export default function ListingRow({ listing, selected, onToggleSelect }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [url, setUrl] = useState(listing.listing_url ?? "");
@@ -61,7 +67,6 @@ export default function ListingRow({ listing }: { listing: Listing }) {
     router.refresh();
   }
 
-  const deviceName = [listing.device?.brand, listing.device?.model].filter(Boolean).join(" ") || "—";
   const isPosted = listing.status === "posted" || listing.status === "sold" || listing.status === "removed";
   const devicePrice = listing.device?.price_recommended ?? null;
   const priceStale =
@@ -69,14 +74,17 @@ export default function ListingRow({ listing }: { listing: Listing }) {
 
   return (
     <tr className="border-t border-zinc-100 align-top">
-      <td className="px-5 py-3 font-medium text-zinc-800">
-        {listing.device?.id ? (
-          <a href={`/devices/${listing.device.id}`} className="hover:underline">{deviceName}</a>
-        ) : (
-          deviceName
+      <td className="px-5 py-3">
+        {onToggleSelect && (
+          <input type="checkbox" checked={!!selected} onChange={onToggleSelect} />
         )}
       </td>
-      <td className="py-3"><PlatformBadge platform={listing.platform} /></td>
+      <td className="py-3">
+        <PlatformBadge platform={listing.platform} />
+        <span className={`ml-1.5 text-xs ${TIER_A.has(listing.platform) ? "text-blue-600" : "text-amber-600"}`}>
+          {TIER_A.has(listing.platform) ? "auto" : "manuel"}
+        </span>
+      </td>
       <td className="py-3">
         {editing || !isPosted ? (
           <input

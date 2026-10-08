@@ -77,8 +77,8 @@ export default async function TrackingPage({
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-zinc-400">
             <tr>
-              <th className="px-5 py-2.5">Appareil</th>
-              <th className="py-2.5">Plateforme</th>
+              <th className="px-5 py-2.5"></th>
+              <th className="py-2.5">Site d&apos;annonce</th>
               <th className="py-2.5">Prix</th>
               <th className="py-2.5">En ligne depuis</th>
               <th className="py-2.5">Lien</th>

@@ -3,14 +3,11 @@
 import { useState } from "react";
 import ListingRow from "./listing-row";
 import PlatformBadge from "@/app/platform-badge";
-import { TIER_A } from "@/lib/platforms";
 
 type Listing = {
   id: string;
   platform: string;
   title: string | null;
-  short_description: string | null;
-  long_description: string | null;
   status: string;
   listing_url: string | null;
   posted_at: string | null;
@@ -60,25 +57,15 @@ export default function DeviceGroup({ deviceName, deviceId, listings }: {
           </button>
         </td>
       </tr>
-      {open && (
-        <tr className="border-t border-zinc-100">
-          <td colSpan={7} className="bg-white px-5 py-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium text-zinc-400">Plateformes à publier :</span>
-              {allPlatforms.map((p) => (
-                <label key={p} className="flex items-center gap-1.5 text-xs text-zinc-600">
-                  <input type="checkbox" checked={selected.has(p)} onChange={() => toggle(p)} />
-                  <PlatformBadge platform={p} />
-                  <span className={TIER_A.has(p) ? "text-blue-600" : "text-amber-600"}>
-                    {TIER_A.has(p) ? "(automatique)" : "(manuel)"}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </td>
-        </tr>
-      )}
-      {open && listings.filter((l) => selected.has(l.platform)).map((l) => <ListingRow key={l.id} listing={l} />)}
+      {open &&
+        listings.map((l) => (
+          <ListingRow
+            key={l.id}
+            listing={l}
+            selected={selected.has(l.platform)}
+            onToggleSelect={() => toggle(l.platform)}
+          />
+        ))}
     </>
   );
 }
