@@ -5,6 +5,7 @@ import { useState } from "react";
 import PlatformBadge from "@/app/platform-badge";
 import { Badge, Button } from "@/app/components/ui";
 import { LISTING_STATUS_COLOR, LISTING_STATUS_LABEL } from "@/lib/colors";
+import { TIER_A } from "@/lib/platforms";
 
 type Listing = {
   id: string;
@@ -129,7 +130,9 @@ export default function ListingRow({ listing }: { listing: Listing }) {
       </td>
       <td className="space-x-1 px-5 py-3 text-xs">
         {!isPosted && (
-          <Button variant="secondary" onClick={markPosted} disabled={busy}>Marquer en ligne</Button>
+          <Button variant="secondary" onClick={markPosted} disabled={busy}>
+            {TIER_A.has(listing.platform) ? "Automatiser la publication" : "Marquer en ligne"}
+          </Button>
         )}
         {isPosted && !editing && (
           <Button variant="ghost" onClick={() => setEditing(true)} disabled={busy}>Modifier</Button>

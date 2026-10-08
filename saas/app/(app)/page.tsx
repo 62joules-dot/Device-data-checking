@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import DeviceListings from "@/app/device-listings";
 import PlatformBadge from "@/app/platform-badge";
-import { Card, CardHeader, PageHeader, StatTile, Button } from "@/app/components/ui";
+import { Card, CardHeader, PageHeader, StatTile } from "@/app/components/ui";
+import ImportSection from "./import-section";
 
 const FORMAT_SUFFIX: Record<string, string> = {
   ebay: "CSV",
@@ -58,12 +59,9 @@ export default async function Dashboard() {
       <PageHeader
         title="Appareils"
         description="Ton inventaire et les fichiers générés pour chaque import."
-        action={
-          <Link href="/import">
-            <Button>+ Importer un fichier</Button>
-          </Link>
-        }
       />
+
+      <ImportSection />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatTile label="Appareils" value={total} />

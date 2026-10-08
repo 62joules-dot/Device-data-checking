@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ListingRow from "./listing-row";
 import PlatformBadge from "@/app/platform-badge";
+import { TIER_A } from "@/lib/platforms";
 
 type Listing = {
   id: string;
@@ -24,6 +25,16 @@ export default function DeviceGroup({ deviceName, deviceId, description, listing
   listings: Listing[];
 }) {
   const [open, setOpen] = useState(false);
+  const allPlatforms = Array.from(new Set(listings.map((l) => l.platform)));
+  const [selected, setSelected] = useState<Set<string>>(new Set(allPlatforms));
+
+  function toggle(p: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      next.has(p) ? next.delete(p) : next.add(p);
+      return next;
+    });
+  }
 
   return (
     <>
@@ -48,14 +59,32 @@ export default function DeviceGroup({ deviceName, deviceId, description, listing
               )}
             </span>
             <span className="flex items-center gap-1 pt-0.5">
-              {Array.from(new Set(listings.map((l) => l.platform))).map((p) => (
+              {allPlatforms.map((p) => (
                 <span key={p} title={p}><PlatformBadge platform={p} /></span>
               ))}
             </span>
           </button>
         </td>
       </tr>
-      {open && listings.map((l) => <ListingRow key={l.id} listing={l} />)}
+      {open && (
+        <tr className="border-t border-zinc-100">
+          <td colSpan={7} className="bg-white px-5 py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-medium text-zinc-400">Plateformes à publier :</span>
+              {allPlatforms.map((p) => (
+                <label key={p} className="flex items-center gap-1.5 text-xs text-zinc-600">
+                  <input type="checkbox" checked={selected.has(p)} onChange={() => toggle(p)} />
+                  <PlatformBadge platform={p} />
+                  <span className={TIER_A.has(p) ? "text-blue-600" : "text-amber-600"}>
+                    {TIER_A.has(p) ? "(automatique)" : "(manuel)"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </td>
+        </tr>
+      )}
+      {open && listings.filter((l) => selected.has(l.platform)).map((l) => <ListingRow key={l.id} listing={l} />)}
     </>
   );
 }

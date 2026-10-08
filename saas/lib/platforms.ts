@@ -24,3 +24,7 @@ export const PLATFORM_META: Record<string, { label: string; domain: string }> = 
 export function platformIconUrl(domain: string) {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
+
+// Real bulk feed/upload: the generated file IS the publish action, no manual
+// copy-paste. Everything else needs a human to post, by hand, on the site.
+export const TIER_A = new Set(["ebay", "machinio", "kitmondo", "dotmed"]);

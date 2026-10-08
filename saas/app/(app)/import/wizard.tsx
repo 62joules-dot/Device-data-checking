@@ -38,7 +38,7 @@ const TIER_B = ["leboncoin", "wallapop", "facebook"];
 
 const STEPS = ["Fichier", "Vérification", "Préparation", "Résultat"];
 
-export default function ImportWizard() {
+export default function ImportWizard({ onDone }: { onDone?: () => void }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
@@ -255,7 +255,11 @@ export default function ImportWizard() {
             {confirmResult.total} appareils importés, {confirmResult.publishable} prêts à publier.
           </p>
           <div className="mt-5 flex gap-2">
-            <a href="/"><Button>Voir l&apos;inventaire</Button></a>
+            {onDone ? (
+              <Button onClick={onDone}>Voir l&apos;inventaire</Button>
+            ) : (
+              <a href="/"><Button>Voir l&apos;inventaire</Button></a>
+            )}
             <a href="/tracking"><Button variant="secondary">Aller au suivi des annonces</Button></a>
           </div>
         </Card>
