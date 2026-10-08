@@ -80,6 +80,16 @@ def api_generate():
             p = os.path.join(outdir, name)
             return json.load(open(p, encoding="utf-8")) if os.path.exists(p) else None
 
+        exports = {}
+        for platform, info in (report.get("tier_a_exports") or {}).items():
+            file_path = info.get("file")
+            if file_path and os.path.exists(file_path):
+                with open(file_path, encoding="utf-8") as f:
+                    exports[platform] = {
+                        "filename": os.path.basename(file_path),
+                        "content": f.read(),
+                    }
+
         result = {
             "report": report,
             "master_database": _read("master_database.json"),
@@ -88,6 +98,7 @@ def api_generate():
                 platform: _read(f"automation/{platform}.json")
                 for platform in ["leboncoin", "wallapop", "facebook", "ebay", "machinio", "kitmondo"]
             },
+            "exports": exports,
         }
         return jsonify(result)
 

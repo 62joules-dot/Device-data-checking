@@ -49,6 +49,22 @@ export async function POST(request: Request) {
 
   const master: any[] = result.master_database ?? [];
   const automation: Record<string, any[]> = result.automation ?? {};
+  const exports: Record<string, { filename: string; content: string }> = result.exports ?? {};
+
+  const { data: run, error: runError } = await supabase
+    .from("runs")
+    .insert({
+      user_id: user.id,
+      source_label: (file as File).name ?? "upload",
+      total_devices: master.length,
+      publishable_count: 0,
+    })
+    .select()
+    .single();
+
+  if (runError || !run) {
+    return NextResponse.json({ error: runError?.message || "failed to record run" }, { status: 500 });
+  }
 
   let publishableCount = 0;
 
@@ -105,12 +121,20 @@ export async function POST(request: Request) {
     }
   }
 
-  await supabase.from("runs").insert({
-    user_id: user.id,
-    source_label: (file as File).name ?? "upload",
-    total_devices: master.length,
-    publishable_count: publishableCount,
-  });
+  await supabase
+    .from("runs")
+    .update({ publishable_count: publishableCount })
+    .eq("id", run.id);
+
+  const exportRows = Object.entries(exports).map(([platform, e]) => ({
+    run_id: run.id,
+    platform,
+    filename: e.filename,
+    content: e.content,
+  }));
+  if (exportRows.length > 0) {
+    await supabase.from("run_exports").insert(exportRows);
+  }
 
   return NextResponse.json({ report: result.report, total: master.length, publishable: publishableCount });
 }

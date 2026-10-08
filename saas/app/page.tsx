@@ -2,6 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import UploadForm from "./upload-form";
+import DeviceListings from "./device-listings";
+
+const EXPORT_LABEL: Record<string, string> = {
+  ebay: "eBay",
+  dotmed: "DOTmed",
+  machinio: "Machinio",
+  kitmondo: "Kitmondo",
+  exapro_prepared: "Exapro",
+  bimedis_prepared: "Bimedis",
+};
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -19,6 +29,24 @@ export default async function Dashboard() {
     .select("id, brand, model, device_type, condition, country, price_recommended, publishable, status, created_at")
     .order("created_at", { ascending: false })
     .limit(50);
+
+  type ExportRow = { id: string; run_id: string; platform: string; filename: string };
+  const runIds = (runs ?? []).map((r) => r.id);
+  const exportRows: ExportRow[] = runIds.length
+    ? ((
+        await supabase
+          .from("run_exports")
+          .select("id, run_id, platform, filename")
+          .in("run_id", runIds)
+      ).data ?? [])
+    : [];
+
+  const exportsByRun = new Map<string, ExportRow[]>();
+  for (const e of exportRows) {
+    const list = exportsByRun.get(e.run_id) ?? [];
+    list.push(e);
+    exportsByRun.set(e.run_id, list);
+  }
 
   return (
     <main className="mx-auto max-w-5xl space-y-8 p-6">
@@ -43,6 +71,7 @@ export default async function Dashboard() {
               <th>Devices</th>
               <th>Publishable</th>
               <th>Date</th>
+              <th>Fichiers d&apos;import</th>
             </tr>
           </thead>
           <tbody>
@@ -52,10 +81,21 @@ export default async function Dashboard() {
                 <td>{r.total_devices}</td>
                 <td>{r.publishable_count}</td>
                 <td>{new Date(r.created_at).toLocaleString()}</td>
+                <td className="space-x-2">
+                  {(exportsByRun.get(r.id) ?? []).map((e) => (
+                    <a
+                      key={e.id}
+                      href={`/exports/${e.id}`}
+                      className="text-slate-500 underline"
+                    >
+                      {EXPORT_LABEL[e.platform] ?? e.platform}
+                    </a>
+                  ))}
+                </td>
               </tr>
             ))}
             {(runs ?? []).length === 0 && (
-              <tr><td className="py-3 text-slate-400" colSpan={4}>No runs yet.</td></tr>
+              <tr><td className="py-3 text-slate-400" colSpan={5}>No runs yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -72,6 +112,7 @@ export default async function Dashboard() {
               <th>Country</th>
               <th>Price</th>
               <th>Status</th>
+              <th>Listings</th>
             </tr>
           </thead>
           <tbody>
@@ -87,10 +128,11 @@ export default async function Dashboard() {
                     {d.publishable ? "ready" : "missing data"}
                   </span>
                 </td>
+                <td><DeviceListings deviceId={d.id} /></td>
               </tr>
             ))}
             {(devices ?? []).length === 0 && (
-              <tr><td className="py-3 text-slate-400" colSpan={6}>No devices yet — upload an inventory file above.</td></tr>
+              <tr><td className="py-3 text-slate-400" colSpan={7}>No devices yet — upload an inventory file above.</td></tr>
             )}
           </tbody>
         </table>
