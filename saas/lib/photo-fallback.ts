@@ -5,6 +5,8 @@ export type BankImage = {
   device_type: string | null;
   url: string;
   path: string;
+  source_url?: string | null;
+  license?: string | null;
 };
 
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();

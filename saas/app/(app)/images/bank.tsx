@@ -104,6 +104,14 @@ export default function ImageBank({ images }: { images: BankImage[] }) {
               <div className="text-xs text-zinc-600">
                 <div className="font-medium">{[img.brand, img.model].filter(Boolean).join(" ") || "—"}</div>
                 <div className="text-zinc-400">{img.device_type ? DEVICE_TYPE_LABEL[img.device_type] : ""}</div>
+                {(img.license || img.source_url) && (
+                  <div className="text-zinc-400">
+                    {img.license}
+                    {img.source_url && (
+                      <a href={img.source_url} target="_blank" rel="noreferrer" className="ml-1 text-blue-600 underline">source</a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
