@@ -65,9 +65,13 @@ export async function POST(request: Request) {
 
     return {
       ...rec,
-      _reference: `REF-${String(nextRefNumber++).padStart(4, "0")}`,
+      // Match found -> same identity, keep its reference and update it in place.
+      // No match -> brand-new device, assign the next reference.
+      _reference: duplicateOf?.reference || `REF-${String(nextRefNumber++).padStart(4, "0")}`,
       _duplicate_of: duplicateOf ? { id: duplicateOf.id, reference: duplicateOf.reference } : null,
-      _include: !duplicateOf,
+      // Always included by default: a match updates the existing device instead of
+      // blocking the import. Unchecking skips that row entirely.
+      _include: true,
     };
   });
 

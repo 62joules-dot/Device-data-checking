@@ -144,12 +144,17 @@ export default function ImportWizard() {
         <div className="space-y-4">
           <Card className="flex flex-wrap gap-6 px-5 py-4 text-sm">
             <div><span className="font-semibold text-zinc-900">{records.length}</span> <span className="text-zinc-500">appareils détectés</span></div>
-            <div><span className="font-semibold text-zinc-900">{duplicateCount}</span> <span className="text-zinc-500">doublons potentiels</span></div>
+            <div><span className="font-semibold text-zinc-900">{duplicateCount}</span> <span className="text-zinc-500">déjà connus — seront mis à jour</span></div>
+            <div><span className="font-semibold text-zinc-900">{records.length - duplicateCount}</span> <span className="text-zinc-500">nouveaux</span></div>
             <div><span className="font-semibold text-zinc-900">{includedCount}</span> <span className="text-zinc-500">seront importés</span></div>
           </Card>
 
           <Card>
-            <CardHeader title="Vérifier les doublons et les références" />
+            <CardHeader title="Vérifier les appareils et les références" />
+            <p className="px-5 pt-3 text-xs text-zinc-500">
+              Un appareil déjà présent (même n° de série, ou même marque/modèle/année) est mis à jour
+              sans perdre son suivi (lien, statut) — il n&apos;est pas dupliqué. Décoche une ligne pour l&apos;ignorer.
+            </p>
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-zinc-400">
                 <tr>
@@ -158,7 +163,7 @@ export default function ImportWizard() {
                   <th className="py-2.5">Appareil</th>
                   <th className="py-2.5">Année</th>
                   <th className="py-2.5">Prix</th>
-                  <th className="py-2.5">Alerte</th>
+                  <th className="py-2.5">Statut</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,13 +187,17 @@ export default function ImportWizard() {
                     <td className="py-2 text-zinc-500">{r.year ?? "—"}</td>
                     <td className="py-2 text-zinc-700">{r.price_recommended ? `${r.price_recommended} €` : "—"}</td>
                     <td className="py-2">
-                      {r._duplicate_of && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                          Doublon de {r._duplicate_of.reference ?? r._duplicate_of.id.slice(0, 8)}
+                      {r._duplicate_of ? (
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                          Mise à jour
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+                          Nouveau
                         </span>
                       )}
                       {!r._publishable && (
-                        <span className="ml-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">
+                        <span className="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
                           {(r._missing_required ?? []).join(", ") || "incomplet"}
                         </span>
                       )}
