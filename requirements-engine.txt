@@ -1,0 +1,4 @@
+# Extra deps for src/engine_api.py on top of requirements.txt.
+# Deliberately excludes playwright/anthropic (research + LLM enrich are
+# opt-in and not needed for the stateless /api/generate endpoint).
+gunicorn>=22.0
