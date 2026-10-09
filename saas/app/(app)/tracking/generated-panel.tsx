@@ -71,7 +71,7 @@ export default function GeneratedPanel({ listings }: { listings: Listing[] }) {
                 </Button>
                 {auto && !isPosted && (
                   <Button onClick={() => automate(l)} disabled={busy === l.id}>
-                    {busy === l.id ? "…" : "Automatiser la publication"}
+                    {busy === l.id ? "…" : "Valider et publier"}
                   </Button>
                 )}
                 {!auto && POST_URL[l.platform] && (

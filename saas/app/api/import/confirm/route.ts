@@ -2,10 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 const PLATFORMS = ["leboncoin", "wallapop", "facebook", "ebay", "machinio", "kitmondo"] as const;
-// Real bulk feed / upload — the generated file IS the publish action, no manual
-// copy-paste. Tracked as already posted. Tier B (leboncoin/wallapop/facebook) stays
-// manual: posted only once the user pastes the real listing link in Suivi.
-const TIER_A = new Set(["ebay", "machinio", "kitmondo"]);
+// Nothing goes online at import: every listing waits in Suivi (ready/generated)
+// until the user has read it and clicked "Valider et publier".
 const LANG_BY_PLATFORM: Record<string, string> = {
   leboncoin: "fr",
   facebook: "fr",
@@ -57,6 +55,10 @@ export async function POST(request: Request) {
   const automation: Record<string, any[]> = body.automation ?? {};
   const exports: Record<string, { filename: string; content: string }> = body.exports ?? {};
   const sourceLabel: string = body.source_label ?? "upload";
+  // Platforms chosen in the import wizard, { platform: {} }. Absent -> all.
+  const chosen: Record<string, unknown> | null =
+    body.platforms && typeof body.platforms === "object" ? body.platforms : null;
+  const isChosen = (platform: string) => !chosen || platform in chosen;
 
   const included = records.filter((r) => r._include !== false);
 
@@ -111,6 +113,7 @@ export async function POST(request: Request) {
 
     const gen = rec.generated ?? {};
     for (const platform of PLATFORMS) {
+      if (!isChosen(platform)) continue;
       const perPlatform = (automation[platform] ?? []).find((a: any) => a._device_id === rec.id);
       if (!perPlatform) continue;
       const lang = LANG_BY_PLATFORM[platform];
@@ -126,13 +129,10 @@ export async function POST(request: Request) {
         // Text only — never touch status/posted_at/price/listing_url, which Suivi owns.
         await supabase.from("device_listings").update(fields).eq("id", existingId);
       } else {
-        const autoPosted = TIER_A.has(platform) && perPlatform._ready_to_publish;
         await supabase.from("device_listings").insert({
           device_id: deviceId,
           platform,
-          status: autoPosted ? "posted" : perPlatform._ready_to_publish ? "ready" : "generated",
-          posted_at: autoPosted ? new Date().toISOString() : null,
-          price: autoPosted ? rec.price_recommended ?? null : null,
+          status: perPlatform._ready_to_publish ? "ready" : "generated",
           ...fields,
         });
       }
@@ -141,13 +141,14 @@ export async function POST(request: Request) {
 
   await supabase.from("runs").update({ publishable_count: publishableCount }).eq("id", run.id);
 
-  const exportRows = Object.entries(exports).map(([platform, e]) => ({
+  const exportRows = Object.entries(exports).filter(([platform]) => isChosen(platform)).map(([platform, e]) => ({
     run_id: run.id,
     platform,
     filename: e.filename,
     content: e.content,
   }));
   for (const platform of PLATFORMS) {
+    if (!isChosen(platform)) continue;
     const platformRecords = automation[platform];
     if (platformRecords && platformRecords.length > 0) {
       exportRows.push({

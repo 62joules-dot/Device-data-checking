@@ -5,12 +5,13 @@ import { useState } from "react";
 import PlatformBadge from "@/app/platform-badge";
 import { Badge, Button } from "@/app/components/ui";
 import { LISTING_STATUS_COLOR, LISTING_STATUS_LABEL } from "@/lib/colors";
-import { TIER_A } from "@/lib/platforms";
+import { POST_URL, TIER_A } from "@/lib/platforms";
 
 type Listing = {
   id: string;
   platform: string;
   title: string | null;
+  long_description?: string | null;
   status: string;
   listing_url: string | null;
   posted_at: string | null;
@@ -38,6 +39,8 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
   const [price, setPrice] = useState(listing.price?.toString() ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
@@ -57,9 +60,22 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
     }
   }
 
-  async function markPosted() {
-    await patch({ status: "posted", listing_url: url, price });
+  // Only reachable from the review panel: the listing text is on screen when
+  // the user validates, so nothing is ever sent unread.
+  async function validate() {
+    await patch({ status: "posted", listing_url: url, price: price || devicePrice });
     setEditing(false);
+    setReviewing(false);
+  }
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(reviewText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable — text stays selectable
+    }
   }
 
   async function saveEdits() {
@@ -67,25 +83,24 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
     setEditing(false);
   }
 
-  // Auto platforms go straight back online; manual ones return to "ready" and
-  // need the new link once reposted by hand.
+  // Back to "ready": a republish goes through review + validation again,
+  // like any other send.
   async function republish() {
-    const auto = TIER_A.has(listing.platform);
-    await patch(
-      auto
-        ? { status: "posted", price: devicePrice ?? listing.price }
-        : { status: "ready", posted_at: null, listing_url: null }
-    );
-    if (!auto) setUrl("");
+    await patch({ status: "ready", posted_at: null, listing_url: null });
+    setUrl("");
+    setReviewing(true);
   }
 
   const isPosted = listing.status === "posted" || listing.status === "sold" || listing.status === "removed";
+  const auto = TIER_A.has(listing.platform);
+  const reviewText = `${listing.title ?? ""}\n\n${listing.long_description ?? ""}`.trim();
   const devicePrice = listing.device?.price_recommended ?? null;
   const priceStale =
     listing.status === "posted" && listing.price != null && devicePrice != null &&
     Number(listing.price) !== Number(devicePrice);
 
   return (
+    <>
     <tr className="border-t border-zinc-100 align-top">
       <td className="px-5 py-3">
         {onToggleSelect && (
@@ -151,8 +166,8 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
       </td>
       <td className="space-x-1 px-5 py-3 text-xs">
         {!isPosted && (
-          <Button onClick={markPosted} disabled={busy}>
-            {TIER_A.has(listing.platform) ? "Automatiser la publication" : "Marquer en ligne"}
+          <Button onClick={() => setReviewing((r) => !r)} disabled={busy}>
+            {reviewing ? "Fermer la relecture" : "Relire et valider"}
           </Button>
         )}
         {isPosted && !editing && (
@@ -177,5 +192,43 @@ export default function ListingRow({ listing, selected, onToggleSelect }: Props)
         {error && <div className="mt-1 text-red-600">{error}</div>}
       </td>
     </tr>
+    {reviewing && !isPosted && (
+      <tr className="border-t border-zinc-100 bg-zinc-50/60">
+        <td />
+        <td colSpan={6} className="px-5 py-4 pl-0">
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                Annonce à relire avant envoi
+              </span>
+              <Button variant="secondary" onClick={copyText} disabled={!reviewText}>
+                {copied ? "Copié ✓" : "Copier le texte"}
+              </Button>
+            </div>
+            {reviewText ? (
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-zinc-700">{reviewText}</pre>
+            ) : (
+              <p className="text-sm text-zinc-400">Aucun texte généré pour cette plateforme — réimporte l&apos;appareil.</p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-zinc-100 pt-3">
+              {!auto && POST_URL[listing.platform] && (
+                <a href={POST_URL[listing.platform]} target="_blank" rel="noreferrer">
+                  <Button variant="secondary">Publier sur le site ↗</Button>
+                </a>
+              )}
+              <span className="text-xs text-zinc-400">
+                {auto
+                  ? `Prix envoyé : ${price || devicePrice || "—"} €`
+                  : "Une fois postée, colle le lien dans la ligne au-dessus avant de valider."}
+              </span>
+              <Button onClick={validate} disabled={busy || (auto && !reviewText)}>
+                {auto ? "Valider et publier" : "Valider — marquer en ligne"}
+              </Button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    )}
+    </>
   );
 }
