@@ -57,7 +57,7 @@ export default async function Dashboard() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Appareils"
+        title="Stock Appareils"
         description="Ton inventaire et les fichiers générés pour chaque import."
       />
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/", label: "Appareils" },
+  { href: "/", label: "Stock Appareils" },
   { href: "/tracking", label: "Suivi" },
   { href: "/analytics", label: "Tableau de bord" },
   { href: "/pricing", label: "Simulateur de prix" },
@@ -16,14 +16,14 @@ const LINKS = [
 export default function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-1">
+    <nav className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
       {LINKS.map((link) => {
         const active = link.href === "/" ? pathname === "/" : pathname?.startsWith(link.href);
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               active ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
             }`}
           >
